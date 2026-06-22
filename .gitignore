@@ -1,0 +1,38 @@
+====== Environment Variables, Postgres & Security ======
+.env
+.env.local
+.env.*
+*.pem
+*.key
+.pgpass
+
+====== Firebase & Cloud Credentials ======
+*firebase-adminsdk*.json
+firebase-credentials.json
+google-credentials.json
+
+====== Python & FastAPI ======
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+====== Databases ======
+*.sqlite3
+*.db
+*.sql
+*.dump
+
+====== OS & IDE Specific ======
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
