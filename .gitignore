@@ -1,38 +1,141 @@
-====== Environment Variables, Postgres & Security ======
-.env
-.env.local
-.env.*
-*.pem
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+# SECURITY & SENSITIVE DATA PROTECTION 
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+
+*.crt
 *.key
+*.keystore
+*.pem
+*.secret
+*.token
+*_keys
+*_secrets
+*_tokens
+.env
+.env.*
+.env.*.local
+.env.local
+id_dsa
+id_rsa
 .pgpass
 
-====== Firebase & Cloud Credentials ======
+# ====== Firebase & Cloud Credentials ======
 *firebase-adminsdk*.json
 firebase-credentials.json
 google-credentials.json
 
-====== Python & FastAPI ======
-__pycache__/
-*.py[cod]
-*$py.class
-venv/
-.venv/
-env/
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+# BUILD ARTIFACTS & DISTRIBUTION
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+
+*.egg
+*.egg-info/
+*.so
+*.tar.gz
+*.whl
+*.zip
+
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+# DEPENDENCY MANAGEMENT & PACKAGE CACHE
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+
+.cache/
+.eggs/
+.pybuilder/
+.python-eggs/
+.venv
+__pypackages__/
+build/
+develop-eggs/
+dist/
+docs/_build/
+eggs/
+env.bak/
 ENV/
-.pytest_cache/
-.coverage
-htmlcov/
-*.log
+parts/
+pip-wheel-metadata/
+profile_default/
+sdist/
+share/python-wheels/
+venv.bak/
+venv/
+wheels/
 
-====== Databases ======
-*.sqlite3
-*.db
-*.sql
-*.dump
-
-====== OS & IDE Specific ======
+#====== OS & IDE Specific ======
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+# DEVELOPMENT & RUNTIME ARTIFACTS
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+
+*.log
+*.log.*
+.dmypy.json
+.mypy_cache/
+.nox/
+.pyre/
+.pytype/
+.tox/
+dmypy.json
+pip-delete-this-directory.txt
+pip-log.txt
+
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+# FRAMEWORK-SPECIFIC PATTERNS
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+
+*.cover
+*.manifest
+*.mo
+*.pot
+*.py[co]
+*.pyc
+*.pyd
+*.pyo
+*.sage.py
+*.spec
+.Python
+.python-version
+archive.zip
+celerybeat-schedule
+celerybeat.pid
+cython_debug/
+db.sqlite3
+db.sqlite3-journal
+docs.zip
+instance/
+local_settings.py
+MANIFEST
+out/
+pdm.toml
+Pipfile.lock
+site
+site/
+test.db
+uv.lock
+.webassets-cache
+var/
+
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+# TESTING & QUALITY ASSURANCE
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+
+.coverage*
+.coverage.*
+.hypothesis/
+.pytest_cache/
+coverage.xml
+coverage/
+htmlcov/
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+#====== Databases ======
+# ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+*.sqlite3
+*.db
+*.sql
+*.dump
