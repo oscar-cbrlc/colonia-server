@@ -1,11 +1,12 @@
 from fastapi import FastAPI
-from sqlalchemy.orm import Session
-from config.database import SessionLocal
+from database import engine, Base
+from routers import *
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Colonia API Server")
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    except:
-        db.close()
+
+# routes van aquí
+# app.include_router(users.router)
+# app.include_router(tabla.router
+# ...
