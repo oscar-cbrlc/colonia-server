@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from model import models
 from schema.user_schema import UserCreate, UserUpdate
-from utils.security import hash_password
+from utils.security import hash_password, verify_password
 
 def get_user_by_email(db: Session, email: str):
     """Busca un usuario por su correo electrónico."""
@@ -10,6 +10,15 @@ def get_user_by_email(db: Session, email: str):
 def get_user_by_id(db: Session, user_id: int):
     """Busca un usuario por su ID único."""
     return db.query(models.Users).filter(models.Users.user_id == user_id).first()
+
+def authenticate_user(db: Session, email: str, password: str):
+    """Valida las credenciales de un usuario por correo y contrasena."""
+    db_user = get_user_by_email(db, email=email)
+    if not db_user:
+        return None
+    if not verify_password(password, db_user.password_hash):
+        return None
+    return db_user
 
 def create_user(db: Session, user_in: UserCreate):
     """Crea un nuevo usuario en la base de datos aplicando hash a su contraseña."""
@@ -36,6 +45,7 @@ def update_user(db: Session, db_user: models.Users, user_update: UserUpdate):
     # si el usuario quiere actualizar su contraseña, se aplica Hash primero
     if "password" in update_data and update_data["password"]:
         update_data["password_hash"] = hash_password(update_data["password"])
+        update_data.pop("password")
     
     # se actualizan cada uno de los cambios
     for key, value in update_data.items():

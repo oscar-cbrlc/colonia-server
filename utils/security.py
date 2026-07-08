@@ -1,7 +1,4 @@
-from passlib.context import CryptContext
 import bcrypt
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
     """Encripta la contraseña en un hash"""
@@ -12,4 +9,7 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Compara contraseña sin encriptar con un hash"""
-    return pwd_context.verify(plain_password, hased_password)
+    return bcrypt.checkpw(
+        plain_password.encode('utf-8'),
+        hashed_password.encode('utf-8')
+    )

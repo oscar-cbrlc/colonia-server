@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from schema.user_schema import UserCreate, UserResponse, UserUpdate
+from schema.user_schema import UserCreate, UserLogin, UserResponse, UserUpdate
 from crud import user_crud
 
 # la ruta  raiz de cada users endpoint seria http://<api>/users
@@ -22,6 +22,24 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
             detail="Correo electrónico ya registrado"
         )
     return user_crud.create_user(db=db, user_in=user_in)
+
+
+@router.post("/login", response_model=UserResponse)
+def login(user_in: UserLogin, db: Session = Depends(get_db)):
+    """
+    Valida el correo y contrasena de un usuario.
+    """
+    db_user = user_crud.authenticate_user(
+        db=db,
+        email=user_in.email,
+        password=user_in.password
+    )
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Correo o contrasena incorrectos"
+        )
+    return db_user
 
 
 @router.get("/user", response_model=UserResponse)
