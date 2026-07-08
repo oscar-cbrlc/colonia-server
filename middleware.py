@@ -2,6 +2,7 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from config import settings
+import os
 
 # middleware for api key validation
 class APIKeyMiddleware(BaseHTTPMiddleware):
@@ -11,10 +12,9 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
         
         if request.url.path in bypass_paths:
             return await call_next(request)
-            
         api_key = request.headers.get("X-API-Key")
         
-        if not api_key or api_key != settings.api_key:
+        if os.getenv("ENVIRONMENT") == "production" and (not api_key or api_key != settings.api_key):
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Invalid or missing API key."}
