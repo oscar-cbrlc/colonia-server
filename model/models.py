@@ -6,6 +6,24 @@ from sqlalchemy import Column, DateTime, ForeignKeyConstraint, Identity, Integer
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+from database import Base
+
+class Base(DeclarativeBase):
+    pass
+
+
+class AvatarItemType(Base):
+    __tablename__ = 'avatar_item_type'
+    __table_args__ = (
+        PrimaryKeyConstraint('avatar_item_type_id', name='avatar_item_type_pkey'),
+    )
+
+    avatar_item_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    avatar_item_type_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    avatar_item: Mapped[list['AvatarItem']] = relationship('AvatarItem', back_populates='avatar_item_type')
+
+
 class Boost(Base):
     __tablename__ = 'boost'
     __table_args__ = (
