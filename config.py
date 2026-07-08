@@ -8,6 +8,8 @@ class Settings(BaseSettings):
         default="postgresql://postgres:@localhost/colonia_local_db"
     )
     api_key: str = Field(alias="API_KEY")
+    jwt_secret: str | None = Field(alias="JWT_SECRET", default=None)
+    jwt_expires_minutes: int = Field(alias="JWT_EXPIRES_MINUTES", default=1440)
     environment: str = Field(alias="ENVIRONMENT", default="development")
 
     model_config = SettingsConfigDict(env_file=".env", extra='ignore')

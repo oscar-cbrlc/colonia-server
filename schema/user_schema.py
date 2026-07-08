@@ -43,3 +43,8 @@ class UserResponse(UserBase):
 
     # siempre en los Response
     model_config = ConfigDict(from_attributes=True)
+
+class UserLoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse

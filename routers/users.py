@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from schema.user_schema import UserCreate, UserLogin, UserResponse, UserUpdate
+from schema.user_schema import UserCreate, UserLogin, UserLoginResponse, UserResponse, UserUpdate
 from crud import user_crud
+from utils.security import create_access_token
 
 # la ruta  raiz de cada users endpoint seria http://<api>/users
 router = APIRouter(
@@ -24,7 +25,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     return user_crud.create_user(db=db, user_in=user_in)
 
 
-@router.post("/login", response_model=UserResponse)
+@router.post("/login", response_model=UserLoginResponse)
 def login(user_in: UserLogin, db: Session = Depends(get_db)):
     """
     Valida el correo y contrasena de un usuario.
@@ -39,7 +40,17 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Correo o contrasena incorrectos"
         )
-    return db_user
+    access_token = create_access_token(
+        data={
+            "sub": str(db_user.user_id),
+            "email": db_user.email
+        }
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": db_user
+    }
 
 
 @router.get("/user", response_model=UserResponse)
