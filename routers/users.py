@@ -66,6 +66,19 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         )
     return db_user
 
+@router.get("/user-bemail", response_model=UserResponse)
+def get_user(email: str, db: Session = Depends(get_db)):
+    """
+    Retorna la información de un usuario en específico, dado su email.
+    """
+    db_user = user_crud.get_user_by_email(db, email=email);
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+    return db_user
+
 @router.patch("/user", response_model=UserResponse)
 def update_user(user_update: UserUpdate, user_id: int, db: Session = Depends(get_db)):
     """
