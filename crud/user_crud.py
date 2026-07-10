@@ -27,10 +27,8 @@ def create_user(db: Session, user_in: UserCreate):
     db_user = models.Users(
         email=user_in.email,
         user_name=user_in.user_name,
-        user_type=user_in.user_type,
         password_hash=hashed_pwd,
-        total_distance=0.0,
-        total_time=0
+        user_type=1 #player
     )
     db.add(db_user)
     db.commit()
