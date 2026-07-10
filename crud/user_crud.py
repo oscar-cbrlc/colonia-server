@@ -3,6 +3,10 @@ from model import models
 from schema.user_schema import UserCreate, UserUpdate
 from utils.security import hash_password, verify_password
 
+def get_all_users(db: Session, limit=100):
+    """Retorna todos los usuarios con un límite."""
+    return db.query(models.Users).limit(limit).all();
+
 def get_user_by_email(db: Session, email: str):
     """Busca un usuario por su correo electrónico."""
     return db.query(models.Users).filter(models.Users.email == email).first()
