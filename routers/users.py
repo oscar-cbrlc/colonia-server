@@ -67,7 +67,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         )
     return db_user
 
-@router.get("/users/", response_model=List[UserResponse])
+@router.get("/", response_model=List[UserResponse])
 async def get_users(
         id: Optional[int] = None,
         email: Optional[str] = None,
