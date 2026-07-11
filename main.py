@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from database import engine, Base
-from routers import health, users
+from routers import health, users, auth
 from middleware import APIKeyMiddleware
 
 Base.metadata.create_all(bind=engine)
@@ -14,3 +14,4 @@ app.add_middleware(APIKeyMiddleware)
 # app.include_router(tabla.router
 app.include_router(health.router)
 app.include_router(users.router)
+app.include_router(auth.router)
