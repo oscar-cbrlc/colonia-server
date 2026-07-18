@@ -5,6 +5,8 @@ from schema.user_schema import UserCreate, UserLogin, UserLoginResponse, UserRes
 from crud import user_crud
 from utils.security import create_access_token
 from typing import List, Optional
+from utils.auth import get_current_user
+from model import models
 
 # la ruta  raiz de cada users endpoint seria http://<api>/users
 router = APIRouter(
@@ -24,7 +26,6 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
             detail="Correo electrónico ya registrado"
         )
     return user_crud.create_user(db=db, user_in=user_in)
-
 
 @router.post("/login", response_model=UserLoginResponse)
 def login(user_in: UserLogin, db: Session = Depends(get_db)):
@@ -53,8 +54,7 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
         "user": db_user
     }
 
-
-@router.get("/user", response_model=UserResponse)
+@router.get("/getUser", response_model=UserResponse)
 def get_user(user_id: int, db: Session = Depends(get_db)):
     """
     Retorna la información de un usuario en específico, dado su id.
@@ -67,7 +67,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         )
     return db_user
 
-@router.get("/", response_model=List[UserResponse])
+@router.get("/getUsers", response_model=List[UserResponse])
 async def get_users(
         id: Optional[int] = None,
         email: Optional[str] = None,
@@ -97,11 +97,16 @@ async def get_users(
         db_users = user_crud.get_all_users(db, limit=limit)
         return db_users
     
-@router.patch("/user", response_model=UserResponse)
-def update_user(user_update: UserUpdate, user_id: int, db: Session = Depends(get_db)):
+@router.patch("/update", response_model=UserResponse)
+def update_user(
+        user_update: UserUpdate, 
+        current_user: models.Users = Depends(get_current_user), 
+        db: Session = Depends(get_db)
+    ):
     """
     Actualiza datos del perfil de usuario.
     """
+    user_id = current_user
     db_user = user_crud.get_user_by_id(db, user_id=user_id)
     if not db_user:
         raise HTTPException(
@@ -110,12 +115,16 @@ def update_user(user_update: UserUpdate, user_id: int, db: Session = Depends(get
         )
     return user_crud.update_user(db=db, db_user=db_user, user_update=user_update)
 
-@router.delete("/user", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+@router.delete("/delete", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+        current_user: models.Users = Depends(get_current_user),  
+        db: Session = Depends(get_db)
+    ):
     """
     Elimina completamente un usuario de la base de datos.
     """
-    success = user_crud.delete_user(db=db, user_id=user_id)
+    user_id = current_user.user_id
+    db_user = user_crud.delete_user(db=db, user_id=user_id)
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

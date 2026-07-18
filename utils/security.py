@@ -5,6 +5,7 @@ import hmac
 import json
 from datetime import datetime, timedelta, timezone
 from config import settings
+from fastapi import HTTPException, status
 
 def hash_password(password: str) -> str:
     """Encripta la contraseña en un hash"""
@@ -52,3 +53,75 @@ def create_access_token(data: dict) -> str:
     encoded_signature = _base64url_encode(signature)
 
     return f"{encoded_header}.{encoded_payload}.{encoded_signature}"
+
+
+def _base64url_decode(data: str) -> bytes:
+    '''Decodificador Base64URL para verificar Token''' 
+    padding = "=" * (-len(data) % 4)
+
+    return base64.urlsafe_b64decode(data + padding)
+
+def verify_access_token(token: str) -> dict:
+    '''Verifica validez del token, retorna payload del mismo'''
+    try:
+        
+        #Verificar partes Header.Payload.Signature
+        parts = token.split(".")
+
+        if len(parts) != 3:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido, partes diferentes."
+            )
+
+        encoded_header, encoded_payload, encoded_signature = parts
+
+        signing_input = f"{encoded_header}.{encoded_payload}".encode("utf-8")
+
+        secret = settings.jwt_secret or settings.api_key
+
+        expected_signature = _base64url_encode(
+            hmac.new(
+                secret.encode("utf-8"),
+                signing_input,
+                hashlib.sha256
+            ).digest()
+        )
+
+        # Comparación de token
+        if not hmac.compare_digest(expected_signature, encoded_signature):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Firma del token inválida"
+            )
+
+        # Leer payload
+        payload = json.loads(
+            _base64url_decode(encoded_payload).decode("utf-8")
+        )
+
+        # Verificar expiración
+        if payload.get("exp") is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token sin fecha de expiración"
+            )
+        
+        current_timestamp = int(datetime.now(timezone.utc).timestamp())
+        if payload["exp"] < current_timestamp:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token expirado"
+            )
+
+        return payload
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
