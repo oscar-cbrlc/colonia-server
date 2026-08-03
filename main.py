@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from database import engine, Base
-from routers import health, users, team, admin
+from routers import admin, boosts, health, team, users
 from middleware import APIKeyMiddleware
 
 Base.metadata.create_all(bind=engine)
@@ -15,3 +15,4 @@ app.include_router(health.router)
 app.include_router(users.router)
 app.include_router(team.router)
 app.include_router(admin.router)
+app.include_router(boosts.router)
