@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from model import models
 from schema.boost_schema import BoostCreate, BoostUpdate
 
-
 def get_boosts(db: Session, skip: int = 0, limit: int = 100):
     """Retorna el catalogo de potenciadores ordenado por identificador."""
     return (
@@ -15,7 +14,6 @@ def get_boosts(db: Session, skip: int = 0, limit: int = 100):
         .all()
     )
 
-
 def get_boost_by_id(db: Session, boost_id: int):
     """Busca un potenciador por su identificador."""
     return (
@@ -24,7 +22,6 @@ def get_boost_by_id(db: Session, boost_id: int):
         .first()
     )
 
-
 def create_boost(db: Session, boost_in: BoostCreate):
     """Crea un potenciador en el catalogo."""
     db_boost = models.Boost(**boost_in.model_dump())
@@ -32,7 +29,6 @@ def create_boost(db: Session, boost_in: BoostCreate):
     db.commit()
     db.refresh(db_boost)
     return db_boost
-
 
 def update_boost(db: Session, db_boost: models.Boost, boost_in: BoostUpdate):
     """Actualiza solamente los campos recibidos de un potenciador."""
@@ -43,7 +39,6 @@ def update_boost(db: Session, db_boost: models.Boost, boost_in: BoostUpdate):
     db.commit()
     db.refresh(db_boost)
     return db_boost
-
 
 def delete_boost(db: Session, boost_id: int):
     """Elimina un potenciador y deja que PostgreSQL aplique sus cascadas."""

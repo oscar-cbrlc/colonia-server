@@ -102,7 +102,7 @@ def delete_team(db: Session, current_user: models.Users):
     db.delete(db_team)
     db.commit()
 
-def remove_all_team_users(db: Session, team_id):
+def remove_all_team_users(db: Session, team_id: int):
     """Remueve todos los usuarios de un equipo"""
     team_users = user_crud.get_all_team_users(db, team_id)
     for user in team_users:
@@ -110,7 +110,7 @@ def remove_all_team_users(db: Session, team_id):
 
     return team_users
 
-def admin_delete(db: Session, team_id):
+def admin_delete(db: Session, team_id: int):
     """Remueve todos los usuarios de un equipo y lo elimina"""
 
     db_team = db.query(models.Team).filter(models.Team.team_id == team_id).first()
