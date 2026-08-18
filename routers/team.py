@@ -24,8 +24,16 @@ def register(
     """
     return team_crud.create_team(db, current_user, team_in)
 
+@router.get("/getAll", response_model=List[TeamResponse])
+def get_all_teams(limit: int | None = None, db: Session = Depends(get_db)):
+    """
+    Retorna la información de todos los equipos.
+    """
+    db_teams = team_crud.get_all_teams(db, limit)
+    return db_teams
+
 @router.get("/getbyId", response_model=TeamResponse)
-def get_team(team_id: int, db: Session = Depends(get_db)):
+def get_team_by_id(team_id: int, db: Session = Depends(get_db)):
     """
     Retorna la información de un equipo en específico, dado su id.
     """
@@ -36,43 +44,16 @@ def get_team(team_id: int, db: Session = Depends(get_db)):
             detail="Equipo no encontrado"
         )
     return db_team
-
-@router.get("/getbyIdOrName", response_model=List[TeamResponse])
-async def get_teams(
-        team_id: Optional[int] = None,
-        team_name: Optional[str] = None,
-        limit: int = 100,
-        db: Session = Depends(get_db) 
-    ):
-    """
-    Retorna uno o más equipos: uno si se filtra por id o nombre, o todos (limite 100) si no.
-    """
-    if team_id is not None:
-        db_team = team_crud.get_team_by_id(db, team_id=team_id)
-        if not db_team:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Equipo no encontrado"
-            )
-        return [db_team]
-    elif team_name is not None:
-        db_team = team_crud.get_team_by_name(db, team_name=team_name)
-        if not db_team:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Equipo no encontrado"
-            )
-        return [db_team]
-    else:
-        db_teams = team_crud.get_all_teams(db, limit=limit)
-        return db_teams
     
-@router.get("/search", response_model=List[TeamResponse])
-def search_teams(
+@router.get("/searchbyName", response_model=List[TeamResponse])
+def search_teams_by_name(
         search: str,
-        limit: int = 20,
+        limit: int = 100,
         db: Session = Depends(get_db)
     ):
+    """
+        Retorna los equipos cuyo nombre contenga el texto enviado.
+    """
     db_team = team_crud.search_teams_by_name(db,team_name=search,limit=limit)
     if not db_team:
             raise HTTPException(

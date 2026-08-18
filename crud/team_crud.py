@@ -4,10 +4,14 @@ from schema.team_schema import TeamCreate, TeamUpdate
 from crud import user_crud
 from fastapi import HTTPException, status
 from enums.enum_types import TeamRole
+from typing import Optional
 
-def get_all_teams(db: Session, limit=100):
+def get_all_teams(db: Session, limit: Optional[int]):
     """Retorna todos los equipos con un límite."""
-    return db.query(models.Team).limit(limit).all()
+    if (limit != None):
+        return db.query(models.Team).limit(limit).all()
+    else:
+        return db.query(models.Team).all()
 
 def get_team_by_id(db: Session, team_id: int):
     """Busca un equipo por su ID único."""
