@@ -48,7 +48,7 @@ def create_team(db: Session, current_user: models.Users, team_in: TeamCreate):
         team_name = team_in.team_name,
         team_description = team_in.team_description,
         team_color = team_in.team_color,
-        access_type = team_in.access_type
+        is_public = team_in.is_public
     )
     db.add(db_team)
     db.flush()
