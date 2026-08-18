@@ -4,7 +4,7 @@ from typing import Optional
 class TeamBase(BaseModel):
     team_name: str
     team_color: int
-    access_type: int
+    is_public: bool
 
 # Creación de equipo
 class TeamCreate(TeamBase):
@@ -15,7 +15,7 @@ class TeamUpdate(BaseModel):
     team_name: Optional[str] = None
     team_description: Optional[str] = None
     team_color: Optional[int] = None
-    access_type: Optional[int] = None
+    is_public: Optional[bool] = None
 
 class TeamResponse(TeamBase):
     team_id: int
