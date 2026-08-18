@@ -9,10 +9,6 @@ class TeamRole(IntEnum):
     moderator = 2
     leader = 3
 
-class TeamAccess(IntEnum):
-    public = 1
-    private = 2
-
 class AvatarItemType(IntEnum):
     head = 1
     neck = 2

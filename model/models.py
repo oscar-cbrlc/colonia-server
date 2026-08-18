@@ -2,7 +2,7 @@ from typing import Optional
 import datetime
 import decimal
 
-from sqlalchemy import Column, DateTime, ForeignKeyConstraint, Identity, Integer, Numeric, PrimaryKeyConstraint, Table, Text, UniqueConstraint, text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKeyConstraint, Identity, Integer, Numeric, PrimaryKeyConstraint, Table, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -112,16 +112,23 @@ class RewardType(Base):
     reward: Mapped[list['Reward']] = relationship('Reward', back_populates='reward_type_')
 
 
-class TeamAccessType(Base):
-    __tablename__ = 'team_access_type'
+class Team(Base):
+    __tablename__ = 'team'
     __table_args__ = (
-        PrimaryKeyConstraint('access_type_id', name='team_access_type_pkey'),
+        PrimaryKeyConstraint('team_id', name='team_pkey'),
+        UniqueConstraint('team_name', name='team_name_unique')
     )
 
-    access_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    access_type_name: Mapped[str] = mapped_column(Text, nullable=False)
+    team_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    team_name: Mapped[str] = mapped_column(Text, nullable=False)
+    team_color: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'))
+    team_description: Mapped[Optional[str]] = mapped_column(Text)
 
-    team: Mapped[list['Team']] = relationship('Team', back_populates='team_access_type')
+    territory: Mapped[list['Territory']] = relationship('Territory', back_populates='team')
+    users: Mapped[list['Users']] = relationship('Users', back_populates='team')
+    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='team')
+    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='team')
 
 
 class TeamRole(Base):
@@ -199,25 +206,18 @@ class Objective(Base):
     challenge: Mapped[list['Challenge']] = relationship('Challenge', back_populates='objective')
 
 
-class Team(Base):
-    __tablename__ = 'team'
+class Territory(Base):
+    __tablename__ = 'territory'
     __table_args__ = (
-        ForeignKeyConstraint(['access_type'], ['team_access_type.access_type_id'], ondelete='SET DEFAULT', onupdate='CASCADE', name='team_access_fk'),
-        PrimaryKeyConstraint('team_id', name='team_pkey'),
-        UniqueConstraint('team_name', name='team_name_unique')
+        ForeignKeyConstraint(['team_id'], ['team.team_id'], ondelete='SET NULL', onupdate='CASCADE', name='team_territory_fk'),
+        PrimaryKeyConstraint('territory_id', name='territory_pkey')
     )
 
-    team_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    team_name: Mapped[str] = mapped_column(Text, nullable=False)
-    team_color: Mapped[int] = mapped_column(Integer, nullable=False)
-    access_type: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
-    team_description: Mapped[Optional[str]] = mapped_column(Text)
+    territory_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    health_points: Mapped[decimal.Decimal] = mapped_column(Numeric, nullable=False)
+    team_id: Mapped[Optional[int]] = mapped_column(Integer)
 
-    team_access_type: Mapped['TeamAccessType'] = relationship('TeamAccessType', back_populates='team')
-    territory: Mapped[list['Territory']] = relationship('Territory', back_populates='team')
-    users: Mapped[list['Users']] = relationship('Users', back_populates='team')
-    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='team')
-    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='team')
+    team: Mapped[Optional['Team']] = relationship('Team', back_populates='territory')
 
 
 class Achievement(Base):
@@ -288,21 +288,6 @@ class StoreCatalog(Base):
     avatar_item: Mapped[Optional['AvatarItem']] = relationship('AvatarItem', back_populates='store_catalog')
     bundle: Mapped[Optional['Bundle']] = relationship('Bundle', back_populates='store_catalog')
     offer_type_: Mapped['OfferType'] = relationship('OfferType', back_populates='store_catalog')
-
-
-class Territory(Base):
-    __tablename__ = 'territory'
-    __table_args__ = (
-        ForeignKeyConstraint(['team_id'], ['team.team_id'], ondelete='SET NULL', onupdate='CASCADE', name='team_territory_fk'),
-        PrimaryKeyConstraint('territory_id', name='territory_pkey')
-    )
-
-    territory_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    location: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    health_points: Mapped[int] = mapped_column(Integer, nullable=False)
-    team_id: Mapped[Optional[int]] = mapped_column(Integer)
-
-    team: Mapped[Optional['Team']] = relationship('Team', back_populates='territory')
 
 
 class Users(Base):
