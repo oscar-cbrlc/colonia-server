@@ -14,7 +14,7 @@ router = APIRouter(
     tags=["Autenticación y Perfil de Usuario"]
 )
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
     """
     Registra un nuevo usuario, validando que el correo no esté ya registrado
@@ -54,7 +54,7 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
         "user": db_user
     }
 
-@router.get("/getUser", response_model=UserResponse)
+@router.get("/{user_id}", response_model=UserResponse)
 def get_user(user_id: int, db: Session = Depends(get_db)):
     """
     Retorna la información de un usuario en específico, dado su id.
@@ -67,7 +67,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         )
     return db_user
 
-@router.get("/getUsers", response_model=List[UserResponse])
+@router.get("/", response_model=List[UserResponse])
 async def get_users(
         id: Optional[int] = None,
         email: Optional[str] = None,
@@ -97,14 +97,14 @@ async def get_users(
         db_users = user_crud.get_all_users(db, limit=limit)
         return db_users
     
-@router.patch("/update", response_model=UserResponse)
+@router.patch("/", response_model=UserResponse)
 def update_user(
         user_update: UserUpdate, 
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
     """
-    Actualiza datos del perfil de usuario.
+    Actualiza datos del perfil del usuario autenticado.
     """
     user_id = current_user
     db_user = user_crud.get_user_by_id(db, user_id=user_id)
@@ -115,13 +115,13 @@ def update_user(
         )
     return user_crud.update_user(db=db, db_user=db_user, user_update=user_update)
 
-@router.delete("/delete", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(
         current_user: models.Users = Depends(get_current_user),  
         db: Session = Depends(get_db)
     ):
     """
-    Elimina completamente un usuario de la base de datos.
+    Elimina completamente al usuario autenticado de la base de datos.
     """
     user_id = current_user.user_id
     db_user = user_crud.delete_user(db=db, user_id=user_id)
