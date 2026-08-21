@@ -12,7 +12,7 @@ router = APIRouter(
     tags=["Territorios"]
 )
 
-@router.post("/register", response_model=TerritoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=TerritoryResponse, status_code=status.HTTP_201_CREATED)
 def register(
         territory_in: TerritoryCreate,
         db: Session = Depends(get_db)
@@ -22,7 +22,7 @@ def register(
     """
     return territory_crud.create_territory(db, territory_in)
 
-@router.get("/getbyId", response_model=TerritoryResponse)
+@router.get("/{territory_id}", response_model=TerritoryResponse)
 def get_territory(territory_id: int, db: Session = Depends(get_db)):
     """
     Retorna la información de un territorio, dado su id.
@@ -35,7 +35,7 @@ def get_territory(territory_id: int, db: Session = Depends(get_db)):
         )
     return db_territory
 
-@router.get("/getAll", response_model=List[TerritoryResponse])
+@router.get("/", response_model=List[TerritoryResponse])
 def get_all_territories(limit: int | None = None, db: Session = Depends(get_db)):
     """
     Retorna la información de todos los territorios.
@@ -43,7 +43,7 @@ def get_all_territories(limit: int | None = None, db: Session = Depends(get_db))
     db_territories = territory_crud.get_all_territories(db, limit)
     return db_territories
 
-@router.patch("/update", response_model=TerritoryResponse)
+@router.patch("/", response_model=TerritoryResponse)
 def update_territory(
         territory_update: TerritoryUpdate, 
         db: Session = Depends(get_db)
