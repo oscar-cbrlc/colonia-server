@@ -11,10 +11,10 @@ router = APIRouter(
     tags=["Operaciones de administrador"]
 )
 
-@router.delete("/users/delete", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(
         user_id: int,
-        current_user: models.Users = Depends(get_current_user),  
+        current_user: models.Users = Depends(get_current_user),
         db: Session = Depends(get_db)
     ):
     """
@@ -34,7 +34,7 @@ def delete_user(
         )
     return
 
-@router.delete("/team/delete", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_team(
         team_id: int,
         current_user: models.Users = Depends(get_current_user),
