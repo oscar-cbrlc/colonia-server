@@ -35,7 +35,7 @@ def get_boost_in_inventory(user_id: int, boost_id: int, db: Session) -> models.B
     db_boost_inv = boost_inventory_crud.get_user_boost(db, user_id, boost_id)
     return db_boost_inv
 
-@router.post("/register", response_model=BoostResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=BoostResponse, status_code=status.HTTP_201_CREATED)
 def create_boost(
     boost_in: BoostCreate,
     _: models.Users = Depends(require_admin),
@@ -44,7 +44,7 @@ def create_boost(
     """Crea un potenciador. Requiere permisos de administrador."""
     return boost_crud.create_boost(db, boost_in)
 
-@router.get("/getAll", response_model=list[BoostResponse])
+@router.get("/", response_model=list[BoostResponse])
 def list_boosts(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=100),
@@ -53,17 +53,17 @@ def list_boosts(
     """Retorna el catalogo de potenciadores."""
     return boost_crud.get_boosts(db, skip=skip, limit=limit)
 
-@router.get("/getbyId", response_model=BoostResponse)
+@router.get("/{boost_id}", response_model=BoostResponse)
 def get_boost(boost_id: int, db: Session = Depends(get_db)):
     """Retorna un potenciador por su identificador."""
     return get_existing_boost(boost_id, db)
 
-@router.get("/getUserInventory", response_model=list[BoostInventoryResponse])
-def get_boost(user_id: int, db: Session = Depends(get_db)):
+@router.get("/users/{user_id}/inventory", response_model=list[BoostInventoryResponse])
+def get_user_inventory(user_id: int, db: Session = Depends(get_db)):
     """Retorna el inventario de potenciadores de un usuario."""
     return boost_inventory_crud.get_user_boost_inventory(db, user_id)
 
-@router.patch("/update", response_model=BoostResponse)
+@router.patch("/{boost_id}", response_model=BoostResponse)
 def update_boost(
     boost_id: int,
     boost_in: BoostUpdate,
@@ -74,7 +74,7 @@ def update_boost(
     db_boost = get_existing_boost(boost_id, db)
     return boost_crud.update_boost(db, db_boost, boost_in)
 
-@router.delete("/delete", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{boost_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_boost(
     boost_id: int,
     _: models.Users = Depends(require_admin),
@@ -85,8 +85,8 @@ def delete_boost(
     boost_crud.delete_boost(db, db_boost.boost_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-@router.patch("/updateUserInventory", response_model=BoostInventoryResponse)
-def update_boost(
+@router.patch("/users/{user_id}/boosts/{boost_id}", response_model=BoostInventoryResponse)
+def update_user_boost_inventory(
     user_id: int,
     boost_id: int,
     boost_in: BoostInventoryUpdate,
