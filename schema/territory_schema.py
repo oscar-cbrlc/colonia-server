@@ -1,22 +1,24 @@
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
-class TerritoryBase(BaseModel):
+class TerritoryCreate(BaseModel):
+    team_id: Optional[int] = None
     health_points: int
 
-# Creación de territorio
-class TerritoryCreate(TerritoryBase):
-    pass
-
-# Actualizar información de territorio
 class TerritoryUpdate(BaseModel):
-    territory_id: int
+    territory_id: str
     health_points: int
     team_id: Optional[int] = None
 
-class TerritoryResponse(TerritoryBase):
-    territory_id: int
-    team_id: Optional[int] = None
-    team_name: Optional[str] = None
-    team_color: Optional[int] = None
+class TerritoryOwnerResponse(BaseModel):
+    team_id: int
+    team_name: str
+    team_color: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+class TerritoryResponse(BaseModel):
+    territory_id: str
+    health_points: int
+    team: Optional[TerritoryOwnerResponse] = None
     model_config = ConfigDict(from_attributes=True)

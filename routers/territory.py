@@ -22,40 +22,69 @@ def register(
     """
     return territory_crud.create_territory(db, territory_in)
 
-@router.get("/getbyId", response_model=TerritoryResponse)
-def get_territory(territory_id: int, db: Session = Depends(get_db)):
+@router.get("/{territory_id}", response_model=TerritoryResponse)
+def get_territory(territory_id: str, db: Session = Depends(get_db)):
     """
     Retorna la información de un territorio, dado su id.
     """
-    db_territory = territory_crud.get_territory_by_id(db, territory_id)
-    if not db_territory:
+    result = territory_crud.get_territory_by_id(db, territory_id)
+    if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Territorio no encontrado"
         )
-    return db_territory
+    
+    db_territory, db_team = result
+    return {
+        "territory_id": db_territory.territory_id,
+        "health_points": db_territory.health_points,
+        "team": db_team
+    }
 
 @router.get("/getAll", response_model=List[TerritoryResponse])
 def get_all_territories(limit: int | None = None, db: Session = Depends(get_db)):
     """
     Retorna la información de todos los territorios.
     """
-    db_territories = territory_crud.get_all_territories(db, limit)
-    return db_territories
+    results = territory_crud.get_all_territories(db, limit)
+    if not results:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="El equipo no posee territorios"
+            )
+    
+    return [
+        {
+            "territory_id": territory.territory_id,
+            "health_points": territory.health_points,
+            "team": team
+        }
+        for territory, team in results
+    ]
 
-@router.patch("/update", response_model=TerritoryResponse)
-def update_territory(
-        territory_update: TerritoryUpdate, 
-        db: Session = Depends(get_db)
-    ):
+@router.patch("/", response_model=TerritoryResponse)
+def update_territory(territory_update: TerritoryUpdate,db: Session = Depends(get_db)):
     """
     Actualiza datos de un territorio.
     """
     territory_id = territory_update.territory_id
-    db_territory = territory_crud.get_territory_by_id(db, territory_id)
+    db_territory = territory_crud.get_territory_model_by_id(db,territory_id)
+
     if not db_territory:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Territorio no encontrado"
         )
-    return territory_crud.update_territory(db, db_territory, territory_update)
+    
+    territory_crud.update_territory(db,db_territory,territory_update)
+    result = territory_crud.get_territory_by_id(
+        db,
+        territory_id
+    )
+    db_territory, db_team = result
+
+    return {
+        "territory_id": db_territory.territory_id,
+        "health_points": db_territory.health_points,
+        "team": db_team
+    }
