@@ -50,6 +50,7 @@ def create_territory(db: Session, territory_in: TerritoryCreate):
     """Crea un nuevo territorio en la base de datos"""
     
     db_territory = models.Territory(
+        territory_id = territory_in.territory_id,
         team_id = territory_in.team_id,
         health_points = territory_in.health_points
     )

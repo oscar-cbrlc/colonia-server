@@ -2,13 +2,14 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
 class TerritoryCreate(BaseModel):
+    territory_id: str
     team_id: Optional[int] = None
-    health_points: int
+    health_points: int = 100
 
 class TerritoryUpdate(BaseModel):
     territory_id: str
-    health_points: int
     team_id: Optional[int] = None
+    health_points: int
 
 class TerritoryOwnerResponse(BaseModel):
     team_id: int
