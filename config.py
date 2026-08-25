@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     jwt_secret: str | None = Field(alias="JWT_SECRET", default=None)
     jwt_expires_minutes: int = Field(alias="JWT_EXPIRES_MINUTES", default=1440)
     environment: str = Field(alias="ENVIRONMENT", default="development")
-
+    member_limit: int = 25
     model_config = SettingsConfigDict(env_file=".env", extra='ignore')
 
 settings = Settings()

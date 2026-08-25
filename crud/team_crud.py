@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from model import models
-from schema.team_schema import TeamCreate, TeamUpdate
-from crud import user_crud
+from schema.team_schema import TeamCreate, TeamUpdate, TeamStats
+from crud import user_crud, territory_crud
 from fastapi import HTTPException, status
 from enums.enum_types import TeamRole
 from typing import Optional
@@ -24,7 +24,7 @@ def get_team_by_name(db: Session, team_name: str):
 def search_teams_by_name(
         db: Session,
         team_name: str,
-        limit: int = 50
+        limit: int
     ):
     """
     Busca equipos cuyo nombre contenga el texto indicado.
@@ -36,6 +36,25 @@ def search_teams_by_name(
         .order_by(models.Team.team_name)
         .limit(limit)
         .all()
+    )
+
+def get_team_stats(db: Session, team_id: int):
+    """Obtiene las estadisticas de un equipo."""
+
+    db_territories = territory_crud.get_all_team_territories(db, team_id)
+    db_users = user_crud.get_all_team_users(db, team_id)
+
+    user_count = len(db_users)
+    territory_count = len(db_territories)
+
+    territory_pts = 0
+    for territory in db_territories:
+        territory_pts += territory.health_points
+
+    return TeamStats(
+        member_count = user_count,
+        territories_controlled = territory_count,
+        total_defense_points = territory_pts
     )
 
 def create_team(db: Session, current_user: models.Users, team_in: TeamCreate):
@@ -57,7 +76,7 @@ def create_team(db: Session, current_user: models.Users, team_in: TeamCreate):
     db.add(db_team)
     db.flush()
 
-    user_crud.assign_user_to_team(current_user,db_team.team_id,TeamRole.leader)
+    user_crud.assign_user_to_team(current_user, db_team.team_id, TeamRole.leader)
     db.commit()
     db.refresh(db_team)
 

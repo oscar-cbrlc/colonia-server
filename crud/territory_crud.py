@@ -5,9 +5,7 @@ from crud import team_crud
 from typing import Optional
 
 def get_territory_model_by_id(db: Session, territory_id: str):
-    """
-    Retorna únicamente el modelo del territorio.
-    """
+    """Retorna únicamente el modelo del territorio."""
     return (
         db.query(models.Territory)
         .filter(
@@ -32,7 +30,6 @@ def get_territory_by_id(db: Session, territory_id: str):
 
 def get_all_territories(db: Session, limit: Optional[int] = None):
     """Retorna información de todos los territorios."""
-
     query = (
         db.query(models.Territory, models.Team)
         .outerjoin(
@@ -45,6 +42,16 @@ def get_all_territories(db: Session, limit: Optional[int] = None):
         query = query.limit(limit)
 
     return query
+
+def get_all_team_territories(db: Session, team_id: int):
+    """Retorna información de todos los territorios de un equipo."""
+    return (
+        db.query(models.Territory)
+        .filter(
+            models.Territory.team_id == team_id
+        )
+        .all()
+    )
 
 def create_territory(db: Session, territory_in: TerritoryCreate):
     """Crea un nuevo territorio en la base de datos"""

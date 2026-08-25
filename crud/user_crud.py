@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from model import models
 from schema.user_schema import UserCreate, UserUpdate
+from schema.team_schema import TeamMember
 from utils.security import hash_password, verify_password
 from fastapi import HTTPException, status
 from enums.enum_types import TeamRole, UserType
@@ -77,11 +78,28 @@ def get_all_team_users(db: Session, team_id: int, limit=25):
     return (
         db.query(models.Users)
         .filter(models.Users.user_team == team_id)
-        .order_by(models.Users.team_role.desc(),
-                  models.Users.user_name)
+        .order_by(
+            models.Users.team_role.desc(),
+
+                  models.Users.user_name
+        )
         .limit(limit)
         .all()
     )
+
+def get_team_members_response(db: Session, team_id: int):
+    """Obtiene datos de los miembros de un equipo."""
+    users = get_all_team_users(db, team_id)
+
+    return [
+        TeamMember(
+            user_id=user.user_id,
+            user_name=user.user_name,
+            user_thumbnail=user.user_thumbnail,
+            team_role=TeamRole(user.team_role).name
+        )
+        for user in users
+    ]
 
 def count_team_members(db: Session, team_id: int):
     return (
