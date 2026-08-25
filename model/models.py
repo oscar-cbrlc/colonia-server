@@ -88,18 +88,6 @@ class OfferType(Base):
     store_catalog: Mapped[list['StoreCatalog']] = relationship('StoreCatalog', back_populates='offer_type_')
 
 
-class RequestState(Base):
-    __tablename__ = 'request_state'
-    __table_args__ = (
-        PrimaryKeyConstraint('request_state_id', name='request_state_pkey'),
-    )
-
-    request_state_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    request_state_name: Mapped[str] = mapped_column(Text, nullable=False)
-
-    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='request_state_')
-
-
 class RewardType(Base):
     __tablename__ = 'reward_type'
     __table_args__ = (
@@ -213,7 +201,7 @@ class Territory(Base):
         PrimaryKeyConstraint('territory_id', name='territory_pkey')
     )
 
-    territory_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    territory_id: Mapped[str] = mapped_column(Text, primary_key=True)
     health_points: Mapped[decimal.Decimal] = mapped_column(Numeric, nullable=False)
     team_id: Mapped[Optional[int]] = mapped_column(Integer)
 
@@ -446,18 +434,15 @@ class TeamChat(Base):
 class TeamRequest(Base):
     __tablename__ = 'team_request'
     __table_args__ = (
-        ForeignKeyConstraint(['request_state'], ['request_state.request_state_id'], ondelete='CASCADE', onupdate='CASCADE', name='request_state_fk'),
-        ForeignKeyConstraint(['team_id'], ['team.team_id'], ondelete='CASCADE', onupdate='CASCADE', name='request_team_fk'),
-        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='request_user_fk'),
-        PrimaryKeyConstraint('request_id', name='team_request_pkey')
+        ForeignKeyConstraint(['team_id'], ['team.team_id'], ondelete='CASCADE', name='team_request_team_fk'),
+        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', name='team_request_user_fk'),
+        PrimaryKeyConstraint('user_id', 'team_id', name='team_request_id')
     )
 
-    request_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    team_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    request_state: Mapped[int] = mapped_column(Integer, nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    team_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    request_timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 
-    request_state_: Mapped['RequestState'] = relationship('RequestState', back_populates='team_request')
     team: Mapped['Team'] = relationship('Team', back_populates='team_request')
     user: Mapped['Users'] = relationship('Users', back_populates='team_request')
 
