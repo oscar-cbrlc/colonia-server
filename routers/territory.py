@@ -12,7 +12,7 @@ router = APIRouter(
     tags=["Territorios"]
 )
 
-@router.post("/register", response_model=TerritoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=TerritoryResponse, status_code=status.HTTP_201_CREATED)
 def register(
         territory_in: TerritoryCreate,
         db: Session = Depends(get_db)
@@ -41,7 +41,7 @@ def get_territory(territory_id: str, db: Session = Depends(get_db)):
         "team": db_team
     }
 
-@router.get("/getAll", response_model=List[TerritoryResponse])
+@router.get("/", response_model=List[TerritoryResponse])
 def get_all_territories(limit: int | None = None, db: Session = Depends(get_db)):
     """
     Retorna la información de todos los territorios.

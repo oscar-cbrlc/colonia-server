@@ -9,11 +9,11 @@ from typing import List, Optional
 from model import models
 
 router = APIRouter(
-    prefix="/team",
+    prefix="/teams",
     tags=["Perfil de equipo"]
 )
 
-@router.post("/register", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
 def register(
         team_in: TeamCreate,
         current_user: models.Users = Depends(get_current_user),
@@ -24,8 +24,16 @@ def register(
     """
     return team_crud.create_team(db, current_user, team_in)
 
-@router.get("/getbyId", response_model=TeamResponse)
-def get_team(team_id: int, db: Session = Depends(get_db)):
+@router.get("/", response_model=List[TeamResponse])
+def get_all_teams(limit: int | None = None, db: Session = Depends(get_db)):
+    """
+    Retorna la información de todos los equipos.
+    """
+    db_teams = team_crud.get_all_teams(db, limit)
+    return db_teams
+
+@router.get("/{team_id}", response_model=TeamResponse)
+def get_team_by_id(team_id: int, db: Session = Depends(get_db)):
     """
     Retorna la información de un equipo en específico, dado su id.
     """
@@ -36,43 +44,16 @@ def get_team(team_id: int, db: Session = Depends(get_db)):
             detail="Equipo no encontrado"
         )
     return db_team
-
-@router.get("/getbyIdOrName", response_model=List[TeamResponse])
-async def get_teams(
-        team_id: Optional[int] = None,
-        team_name: Optional[str] = None,
-        limit: int = 100,
-        db: Session = Depends(get_db) 
-    ):
-    """
-    Retorna uno o más equipos: uno si se filtra por id o nombre, o todos (limite 100) si no.
-    """
-    if team_id is not None:
-        db_team = team_crud.get_team_by_id(db, team_id=team_id)
-        if not db_team:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Equipo no encontrado"
-            )
-        return [db_team]
-    elif team_name is not None:
-        db_team = team_crud.get_team_by_name(db, team_name=team_name)
-        if not db_team:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Equipo no encontrado"
-            )
-        return [db_team]
-    else:
-        db_teams = team_crud.get_all_teams(db, limit=limit)
-        return db_teams
     
-@router.get("/search", response_model=List[TeamResponse])
-def search_teams(
+@router.get("/search-name", response_model=List[TeamResponse])
+def search_teams_by_name(
         search: str,
-        limit: int = 20,
+        limit: int = 100,
         db: Session = Depends(get_db)
     ):
+    """
+        Retorna los equipos cuyo nombre contenga el texto enviado.
+    """
     db_team = team_crud.search_teams_by_name(db,team_name=search,limit=limit)
     if not db_team:
             raise HTTPException(
@@ -81,7 +62,7 @@ def search_teams(
             )
     return db_team
     
-@router.patch("/update", response_model=TeamResponse)
+@router.patch("/", response_model=TeamResponse)
 def update_team(
         team_update: TeamUpdate, 
         current_user: models.Users = Depends(get_current_user),
@@ -104,41 +85,49 @@ def update_team(
         )
     return team_crud.update_team(db=db, db_team=db_team, team_update=team_update)
 
-@router.delete("/delete", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/mine", status_code=status.HTTP_204_NO_CONTENT)
 def delete_team(
         current_user: models.Users = Depends(get_current_user),
         db: Session = Depends(get_db)
     ):
+    """
+    Elimina el equipo del usuario autenticado de la base de datos.
+    """
     team_crud.delete_team(db, current_user)
 
-@router.get("/getTeamMembers",response_model=List[UserResponse])
+@router.get("/{team_id}/members",response_model=List[UserResponse])
 def get_team_members(team_id: int, db: Session = Depends(get_db)):
     return user_crud.get_all_team_users(
         db,
         team_id
     )
 
-@router.patch("/joinTeam", response_model=UserResponse)
+@router.patch("/{team_id}/me/join", response_model=UserResponse)
 def join_team(
         team_id: int,
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
-    return user_crud.user_join_team(db, current_user,team_id)
+    """Inscribe al usuario autenticado en un equipo, actualizando  user.team_id."""
+    return user_crud.user_join_team(db, current_user, team_id)
 
-@router.patch("/exitTeam", response_model=UserResponse)
-def exit_team(
+@router.patch("/me/leave", response_model=UserResponse)
+def leave_team(
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
+    """Elimina al usuario autenticado de su equipo, actualizando user.user_team en Null"""
     return user_crud.exit_team(db, current_user)
 
-@router.patch("/kickFromTeam", response_model=UserResponse)
+@router.patch("/members/{user_id}/kick", response_model=UserResponse)
 def kick_from_team(
         user_id: int,
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
+    """
+    Elimina a un usuario de su equipo, actualizando user.user_team en Null.
+    """
     if not user_crud.is_moderator(current_user):
         raise HTTPException(
             status_code=403,
@@ -146,13 +135,16 @@ def kick_from_team(
         )
     return user_crud.kick_from_team(db, current_user, user_id)
 
-@router.patch("/updateTeamRole", response_model=UserResponse)
+@router.patch("/members/{user_id}/role", response_model=UserResponse)
 def update_team_role(
         user_id: int,
         team_role: int,
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
+    """
+    Actualiza el rol de equipo de un usuario, actualizando user.team_role.
+    """
     if not user_crud.is_leader(current_user):
         raise HTTPException(
             status_code=403,
