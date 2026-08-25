@@ -30,7 +30,6 @@ class TeamMember(BaseModel):
 
 class TeamModelResponse(TeamBase):
     team_id: int
-    team_description: Optional[str] = None
     stats: Optional[TeamStats] = None
     
     model_config = ConfigDict(from_attributes=True)

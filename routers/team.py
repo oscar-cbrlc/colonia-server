@@ -44,7 +44,6 @@ def get_all_teams(limit: int | None = None, db: Session = Depends(get_db)):
         {
             "team_id": team.team_id,
             "team_name": team.team_name,
-            "team_description": team.team_description,
             "team_color": team.team_color,
             "is_public": team.is_public,
             "stats": team_crud.get_team_stats(db, team.team_id),
@@ -72,7 +71,6 @@ def search_teams_by_name(
         {
             "team_id": team.team_id,
             "team_name": team.team_name,
-            "team_description": team.team_description,
             "team_color": team.team_color,
             "is_public": team.is_public,
             "stats": team_crud.get_team_stats(db, team.team_id),
