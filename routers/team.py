@@ -41,7 +41,6 @@ def register(
 def get_all_teams(limit: int | None = None, db: Session = Depends(get_db)):
     """Retorna la información de todos los equipos."""
     db_teams = team_crud.get_all_teams(db, limit)
-    db_users = user_crud.get_team_members_response(db, team_id)
 
     return [
         {
