@@ -1,10 +1,19 @@
 from sqlalchemy.orm import Session
 from model import models
-from schema.user_schema import UserCreate, UserUpdate
+from schema.user_schema import (
+    UserCreate,
+    UserUpdate,
+    UserResponse,
+    UserBaseResponse,
+    UserAvatarResponse,
+    UserStatsResponse,
+    UserTeamResponse
+)
 from schema.team_schema import TeamMember
 from utils.security import hash_password, verify_password
 from fastapi import HTTPException, status
 from enums.enum_types import TeamRole, UserType
+from config import settings
 
 def get_all_users(db: Session, limit=100):
     """Retorna todos los usuarios con un límite."""
@@ -101,11 +110,69 @@ def get_team_members_response(db: Session, team_id: int):
         for user in users
     ]
 
-def count_team_members(db: Session, team_id: int):
-    return (
-        db.query(models.Users)
-        .filter(models.Users.user_team == team_id)
-        .count()
+def _build_user_data(db: Session, db_user: models.Users):
+    """Obtener datos de un usuario para usar en Response"""
+
+    avatar = UserAvatarResponse(
+        user_thumbnail = db_user.user_thumbnail,
+        model_url = settings.model_url,
+        avatar_head = db_user.avatar_head,
+        avatar_neck = db_user.avatar_neck,
+        avatar_body = db_user.avatar_body,
+        avatar_footwear = db_user.avatar_footwear,
+        avatar_color = db_user.avatar_color
+    )
+
+    stats = UserStatsResponse(
+        total_distance = db_user.total_distance,
+        total_time = db_user.total_time
+    )
+
+    team = None
+
+    if db_user.user_team is not None:
+        db_team = (
+            db.query(models.Team)
+            .filter(
+                models.Team.team_id == db_user.user_team
+            )
+            .first()
+        )
+
+        if db_team:
+            team = UserTeamResponse(
+                team_id = db_team.team_id,
+                team_name = db_team.team_name,
+                team_role = TeamRole(db_user.team_role).name
+            )
+
+    return avatar, stats, team
+
+def get_user_response(db: Session, db_user: models.Users):
+    """Construir response para usuario autentificado."""
+    avatar, stats, team = _build_user_data(db, db_user)
+
+    return UserResponse(
+        user_id = db_user.user_id,
+        user_name = db_user.user_name,
+        email = db_user.email,
+        user_type = UserType(db_user.user_type).name,
+        coin_amount = db_user.coin_amount,
+        avatar = avatar,
+        stats = stats,
+        team = team
+    )
+
+def get_user_base_response(db: Session, db_user: models.Users):
+    """Construir response para usuario."""
+    avatar, stats, team = _build_user_data(db ,db_user)
+
+    return UserBaseResponse(
+        user_id = db_user.user_id,
+        user_name = db_user.user_name,
+        avatar = avatar,
+        stats = stats,
+        team = team
     )
 
 def assign_user_to_team(db_user: models.Users, team_id: int, team_role: TeamRole):

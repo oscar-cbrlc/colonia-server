@@ -1,12 +1,10 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
 
-# todos comparten las credenciales de identificación
 class UserBase(BaseModel):
     email: EmailStr
     user_name: str
 
-# para la creación de un usuario, solo se permite email, username y password
 class UserCreate(UserBase):
     password: str
 
@@ -14,8 +12,6 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-
-# para actualización del usuario
 class UserUpdate(BaseModel):
     user_name: Optional[str] = None
     password: Optional[str] = None
@@ -35,26 +31,43 @@ class UserUpdate(BaseModel):
     coin_amount: Optional[int] = None
     user_thumbnail: Optional[str] = None
 
-# Respuesta de la API. No se devuelve password
-class UserResponse(UserBase):
-    user_id: int
-    user_type: int
-    user_team: Optional[int] = None
-    team_role: Optional[int] = None
-    
-    total_distance: float = 0.0
-    total_time: float = 0.0
-    
+class UserAvatarResponse(BaseModel):
+    user_thumbnail: Optional[str] = None
+    model_url: str
     avatar_head: Optional[int] = None
     avatar_neck: Optional[int] = None
     avatar_body: Optional[int] = None
     avatar_footwear: Optional[int] = None
-    avatar_color: int = 13398016
+    avatar_color: int
 
-    coin_amount: int = 0
-    user_thumbnail: Optional[str] = None
+class UserStatsResponse(BaseModel):
+    total_distance: float = 0.0
+    total_time: float = 0.0
 
-    # siempre en los Response
+class UserTeamResponse(BaseModel):
+    team_id: int
+    team_name: str
+    team_role: str
+
+class UserBaseResponse(BaseModel):
+    user_id: int
+    user_name: str
+    avatar: UserAvatarResponse
+    stats: UserStatsResponse
+    team: Optional[UserTeamResponse]
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class UserResponse(BaseModel):
+    user_id: int
+    user_name: str
+    email: str
+    user_type: str
+    coin_amount: int
+    avatar: UserAvatarResponse
+    stats: UserStatsResponse
+    team: Optional[UserTeamResponse]
+    
     model_config = ConfigDict(from_attributes=True)
 
 class UserLoginResponse(BaseModel):
