@@ -25,6 +25,7 @@ def register(
 
     db_team = team_crud.create_team(db, current_user, team_in)
     team_stats = team_crud.get_team_stats(db, db_team.team_id)
+    db_users = user_crud.get_team_members_response(db, db_team.team_id)
  
     return {
         "team_id": db_team.team_id,
@@ -32,7 +33,8 @@ def register(
         "team_description": db_team.team_description,
         "team_color": db_team.team_color,
         "is_public": db_team.is_public,
-        "stats": team_stats
+        "stats": team_stats,
+        "members": db_users
     }
 
 @router.get("/", response_model=List[TeamModelResponse])
