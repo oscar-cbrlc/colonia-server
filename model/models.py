@@ -316,13 +316,13 @@ class Users(Base):
     team_role_: Mapped[Optional['TeamRole']] = relationship('TeamRole', back_populates='users')
     team: Mapped[Optional['Team']] = relationship('Team', back_populates='users')
     user_type_: Mapped['UserType'] = relationship('UserType', back_populates='users')
-    avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='user')
-    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='user')
-    notification: Mapped[list['Notification']] = relationship('Notification', back_populates='user')
-    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user')
-    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user')
-    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user')
-    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='user')
+    avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='user', passive_deletes=True)
+    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='user', passive_deletes=True)
+    notification: Mapped[list['Notification']] = relationship('Notification', back_populates='user', passive_deletes=True)
+    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user', passive_deletes=True)
+    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user', passive_deletes=True)
+    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user', passive_deletes=True)
+    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='user', passive_deletes=True)
 
 
 class AvatarInventory(Base):

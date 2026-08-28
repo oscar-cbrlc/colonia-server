@@ -25,7 +25,9 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Correo electrónico ya registrado"
         )
-    return user_crud.create_user(db=db, user_in=user_in)
+    
+    db_user = user_crud.create_user(db, user_in)
+    return user_crud.get_user_response(db, db_user)
 
 @router.post("/login", response_model=UserLoginResponse)
 def login(user_in: UserLogin, db: Session = Depends(get_db)):
