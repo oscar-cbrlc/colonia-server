@@ -166,6 +166,7 @@ class AvatarItem(Base):
     item_name: Mapped[str] = mapped_column(Text, nullable=False)
     item_type: Mapped[int] = mapped_column(Integer, nullable=False)
     item_image: Mapped[str] = mapped_column(Text, nullable=False)
+    item_url: Mapped[str] = mapped_column(Text, nullable=False)
 
     avatar_item_type: Mapped['AvatarItemType'] = relationship('AvatarItemType', back_populates='avatar_item')
     bundle: Mapped[list['Bundle']] = relationship('Bundle', secondary='item_bundle', back_populates='avatar_item')

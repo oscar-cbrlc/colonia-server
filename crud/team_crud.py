@@ -59,7 +59,6 @@ def get_team_stats(db: Session, team_id: int):
 
 def create_team(db: Session, current_user: models.Users, team_in: TeamCreate):
     """Crea un nuevo equipo en la base de datos"""
-    
     find_team = get_team_by_name(db, team_name=team_in.team_name)
     if find_team:
         raise HTTPException(
@@ -76,7 +75,7 @@ def create_team(db: Session, current_user: models.Users, team_in: TeamCreate):
     db.add(db_team)
     db.flush()
 
-    user_crud.assign_user_to_team(current_user, db_team.team_id, TeamRole.leader)
+    user_crud.assign_user_to_team(db, current_user, db_team.team_id, TeamRole.leader)
     db.commit()
     db.refresh(db_team)
 
@@ -97,9 +96,8 @@ def update_team(db: Session, db_team: models.Team, team_update: TeamUpdate):
 
 def delete_team(db: Session, current_user: models.Users):
     """Elimina permanentemente a un equipo de la base de datos."""
-
     team_id = current_user.user_team
-    db_team = db.query(models.Team).filter(models.Team.team_id == team_id).first()
+    db_team = get_team_by_id(db, team_id)
     if not db_team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -112,16 +110,15 @@ def delete_team(db: Session, current_user: models.Users):
             detail="Solo el líder puede eliminar el equipo."
         )
     
-    members = user_crud.count_team_members(db, team_id)
-    if members > 1:
+    members = user_crud.get_all_team_users(db, team_id)
+    if len(members) > 1:
         raise HTTPException(
             status_code=400,
             detail="No se puede eliminar un equipo que aún tiene miembros."
         )
     
-    user_crud.remove_user_from_team(current_user)
+    user_crud.remove_user_from_team(db, current_user)
     db.flush()
-
     db.delete(db_team)
     db.commit()
 
@@ -129,8 +126,7 @@ def remove_all_team_users(db: Session, team_id: int):
     """Remueve todos los usuarios de un equipo"""
     team_users = user_crud.get_all_team_users(db, team_id)
     for user in team_users:
-        user_crud.remove_user_from_team(user)
-
+        user_crud.remove_user_from_team(db, user)
     return team_users
 
 def admin_delete(db: Session, team_id: int):
@@ -146,3 +142,4 @@ def admin_delete(db: Session, team_id: int):
     remove_all_team_users(db, team_id)
     db.delete(db_team)
     db.commit()
+    

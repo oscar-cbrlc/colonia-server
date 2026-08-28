@@ -9,11 +9,11 @@ from model import models
 
 security = HTTPBearer()
 
-# Obtener id de usuario autenticado
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
     ) -> models.Users:
+    """Obtiene el modelo del usuario autentificado"""
 
     # Token enviado por el cliente
     token = credentials.credentials

@@ -1,19 +1,30 @@
 from sqlalchemy.orm import Session
 from model import models
-from schema.user_schema import (
-    UserCreate,
-    UserUpdate,
-    UserResponse,
-    UserBaseResponse,
-    UserAvatarResponse,
-    UserStatsResponse,
-    UserTeamResponse
-)
-from schema.team_schema import TeamMember
+from schema.user_schema import UserCreate, UserUpdate
 from utils.security import hash_password, verify_password
 from fastapi import HTTPException, status
 from enums.enum_types import TeamRole, UserType
-from config import settings
+
+def is_leader(db_user: models.Users):
+    role_id = db_user.team_role
+    if(role_id == TeamRole.leader):
+        return True
+    else:
+        return False
+    
+def is_moderator(db_user: models.Users):
+    role_id = db_user.team_role
+    if(role_id > TeamRole.member):
+        return True
+    else:
+        return False
+    
+def is_admin(db_user: models.Users):
+    user_type = db_user.user_type
+    if(user_type == UserType.admin):
+        return True
+    else:
+        return False
 
 def get_all_users(db: Session, limit=100):
     """Retorna todos los usuarios con un límite."""
@@ -96,215 +107,41 @@ def get_all_team_users(db: Session, team_id: int, limit=25):
         .all()
     )
 
-def get_team_members_response(db: Session, team_id: int):
-    """Obtiene datos de los miembros de un equipo."""
-    users = get_all_team_users(db, team_id)
-
-    return [
-        TeamMember(
-            user_id=user.user_id,
-            user_name=user.user_name,
-            user_thumbnail=user.user_thumbnail,
-            team_role=TeamRole(user.team_role).name
-        )
-        for user in users
-    ]
-
-def _build_user_data(db: Session, db_user: models.Users):
-    """Obtener datos de un usuario para usar en Response"""
-
-    avatar = UserAvatarResponse(
-        user_thumbnail = db_user.user_thumbnail,
-        model_url = settings.model_url,
-        avatar_head = db_user.avatar_head,
-        avatar_neck = db_user.avatar_neck,
-        avatar_body = db_user.avatar_body,
-        avatar_footwear = db_user.avatar_footwear,
-        avatar_color = db_user.avatar_color
-    )
-
-    stats = UserStatsResponse(
-        total_distance = db_user.total_distance,
-        total_time = db_user.total_time
-    )
-
-    team = None
-
-    if db_user.user_team is not None:
-        db_team = (
-            db.query(models.Team)
-            .filter(
-                models.Team.team_id == db_user.user_team
-            )
-            .first()
-        )
-
-        if db_team:
-            team = UserTeamResponse(
-                team_id = db_team.team_id,
-                team_name = db_team.team_name,
-                team_role = TeamRole(db_user.team_role).name
-            )
-
-    return avatar, stats, team
-
-def get_user_response(db: Session, db_user: models.Users):
-    """Construir response para usuario autentificado."""
-    avatar, stats, team = _build_user_data(db, db_user)
-
-    return UserResponse(
-        user_id = db_user.user_id,
-        user_name = db_user.user_name,
-        email = db_user.email,
-        user_type = UserType(db_user.user_type).name,
-        coin_amount = db_user.coin_amount,
-        avatar = avatar,
-        stats = stats,
-        team = team
-    )
-
-def get_user_base_response(db: Session, db_user: models.Users):
-    """Construir response para usuario."""
-    avatar, stats, team = _build_user_data(db ,db_user)
-
-    return UserBaseResponse(
-        user_id = db_user.user_id,
-        user_name = db_user.user_name,
-        avatar = avatar,
-        stats = stats,
-        team = team
-    )
-
-def assign_user_to_team(db_user: models.Users, team_id: int, team_role: TeamRole):
-    """
-    Asigna un usuario al equipo seleccionado.
-    """
+def assign_user_to_team(db: Session, db_user: models.Users, team_id: int, team_role: TeamRole):
+    """Asigna un usuario al equipo seleccionado, con el rol seleccionado."""
     db_user.user_team = team_id
     db_user.team_role = team_role
-
-def user_join_team(db: Session, db_user: models.Users, team_id: int):
-    assign_user_to_team(db_user, team_id, TeamRole.member)
-
     db.commit()
     db.refresh(db_user)
     return db_user
 
-def is_leader(db_user: models.Users):
-    role_id = db_user.team_role
-
-    if(role_id == TeamRole.leader):
-        return True
-    else:
-        return False
-    
-def is_moderator(db_user: models.Users):
-    role_id = db_user.team_role
-
-    if(role_id > TeamRole.member):
-        return True
-    else:
-        return False
-    
-def is_admin(db_user: models.Users):
-    user_type = db_user.user_type
-
-    if(user_type == UserType.admin):
-        return True
-    else:
-        return False
-
-def update_team_role(db_user: models.Users, new_role: TeamRole):
-    """
-    Actualiza el rol de un usuario dentro de un equipo.
-    """
-    db_user.team_role = new_role
-    return db_user
-
-def transfer_team_leadership(leader: models.Users, user: models.Users):
-    """
-    Transfiere rol de liderazgo de un equipo a otro usuario.
-    """
-    update_team_role(leader, TeamRole.moderator)
-    return update_team_role(user, TeamRole.leader)
-
-def change_team_role(db: Session,  leader: models.Users, user_id: int ,new_role: TeamRole):
-    """
-    Cambia el rol de un usuario dentro de un equipo por parte del lider.
-    """
-    if not is_leader(leader):
-        raise HTTPException(
-            status_code=403,
-            detail="Solo el lider pueden realizar esta acción"
-        )
-    
-    user = get_user_by_id(db, user_id)
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="Usuario no encontrado."
-        )
-    
-    leader_team = leader.user_team
-    user_team = user.user_team
-    if(leader_team != user_team):
-        raise HTTPException(
-            status_code=403,
-            detail="Usuario no pertenece a este equipo."
-        )
-    
-    if(leader.user_id == user.user_id):
-        raise HTTPException(
-            status_code=403,
-            detail="Lider no puede cambiar su rol sin promover a alguien más."
-        )
-    
-    try:
-        TeamRole(new_role)
-    except ValueError:
-        raise HTTPException(
-            status_code=400,
-            detail="Rol no válido."
-        )
-    
-    if(new_role == TeamRole.leader):
-        db_user = transfer_team_leadership(leader, user)
-    else:
-        db_user = update_team_role(user, new_role)
-
-    db.commit()
-    db.refresh(db_user)
-    return db_user
-    
-def remove_user_from_team(db_user: models.Users):
-    """
-    Remueve un usuario del equipo seleccionado.
-    """
+def remove_user_from_team(db: Session, db_user: models.Users):
+    """Remueve el equipo y rol de equipo del usuario."""
     db_user.user_team = None
     db_user.team_role = None
-    return db_user
-
-def exit_team(db: Session, db_user: models.Users):
-    """
-    Remueve al usuario del equipo al que pertenece.
-    """
-    remove_user_from_team(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
 
-def kick_from_team(db: Session, db_user: models.Users, user_id: int):
-    """
-    Remueve a un usuario de su equipo por parte de moderación.
-    """
-    db_user = get_user_by_id(db, user_id)
-    if not db_user:
-        raise HTTPException(
-            status_code=404,
-            detail="Usuario no encontrado."
-        )
-    remove_user_from_team(db_user)
+def promote_team_role(db: Session, team_leader: models.Users, db_user: models.Users):
+    """Promueve el rol de equipo de un usuario."""
+    user_role = db_user.team_role
+    match user_role:
+        case TeamRole.member:
+            db_user.team_role = TeamRole.moderator
+
+        case TeamRole.moderator:
+            team_leader.team_role = TeamRole.moderator
+            db_user.team_role = TeamRole.leader
+
     db.commit()
     db.refresh(db_user)
-    return db_user
 
-    
+def demote_team_role(db: Session, db_user: models.Users):
+    """Denigra el rol de equipo de un usuario."""
+    user_role = db_user.team_role
+    if(user_role > TeamRole.member):
+        db_user.team_role = user_role -1
+
+    db.commit()
+    db.refresh(db_user)

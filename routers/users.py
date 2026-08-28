@@ -6,6 +6,7 @@ from crud import user_crud
 from utils.security import create_access_token
 from typing import List, Optional
 from utils.auth import get_current_user
+from utils.response_builder import get_user_response, get_user_base_response
 from model import models
 
 # la ruta  raiz de cada users endpoint seria http://<api>/users
@@ -27,7 +28,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         )
     
     db_user = user_crud.create_user(db, user_in)
-    return user_crud.get_user_response(db, db_user)
+    return get_user_response(db, db_user)
 
 @router.post("/login", response_model=UserLoginResponse)
 def login(user_in: UserLogin, db: Session = Depends(get_db)):
@@ -50,7 +51,7 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
             "email": db_user.email
         }
     )
-    user_response = user_crud.get_user_response(db, db_user)
+    user_response = get_user_response(db, db_user)
 
     return {
         "access_token": access_token,
@@ -67,7 +68,7 @@ def get_current_user_data(
     Retorna la información completa del usuario autenticado.
     """
 
-    return user_crud.get_user_response(db, current_user)
+    return get_user_response(db, current_user)
 
 @router.get("/{user_id}", response_model=UserBaseResponse)
 def get_user(user_id: int, db: Session = Depends(get_db)):
@@ -80,7 +81,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Usuario no encontrado"
         )
-    return user_crud.get_user_base_response(db,db_user)
+    return get_user_base_response(db,db_user)
 
 @router.get("/", response_model=List[UserBaseResponse])
 async def get_users(
@@ -100,7 +101,7 @@ async def get_users(
                 detail="Usuario no encontrado"
             )
         return [
-            user_crud.get_user_base_response(db, db_user)
+            get_user_base_response(db, db_user)
         ]
     elif email is not None:
         db_user = user_crud.get_user_by_email(db, email)
@@ -110,12 +111,12 @@ async def get_users(
                 detail="Usuario no encontrado"
             )
         return [
-            user_crud.get_user_base_response(db, db_user)
+            get_user_base_response(db, db_user)
         ]
     else:
         db_users = user_crud.get_all_users(db, limit)
         return [
-            user_crud.get_user_base_response(db, db_user)
+            get_user_base_response(db, db_user)
             for db_user in db_users
         ]
     
@@ -137,7 +138,7 @@ def update_user(
         )
     result = user_crud.update_user(db, db_user, user_update)
 
-    return user_crud.get_user_response(db, result)
+    return get_user_response(db, result)
 
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(

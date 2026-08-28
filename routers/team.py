@@ -7,11 +7,27 @@ from utils.auth import get_current_user
 from crud import team_crud, user_crud
 from typing import List
 from model import models
+from enums.enum_types import TeamRole
+from utils.response_builder import get_user_response, build_team_data
 
 router = APIRouter(
     prefix="/teams",
     tags=["Perfil de equipo"]
 )
+
+def user_in_team(db: Session, user_id: int, team_id: int):
+    user_db = user_crud.get_user_by_id(db, user_id)
+    if not user_db:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+    if(user_db.user_team != team_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Usuario no pertenece al equipo"
+        )
+    return user_db
 
 @router.post("/", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
 def register(
@@ -19,23 +35,10 @@ def register(
         current_user: models.Users = Depends(get_current_user),
         db: Session = Depends(get_db)
     ):
-    """
-    Registra un nuevo equipo, validando que el nombre no este ya registrado y asignando el usuario actual como su lider
-    """
+    """Registra un nuevo equipo, validando que el nombre no este ya registrado y asignando el usuario actual como su lider"""
 
     db_team = team_crud.create_team(db, current_user, team_in)
-    team_stats = team_crud.get_team_stats(db, db_team.team_id)
-    db_users = user_crud.get_team_members_response(db, db_team.team_id)
- 
-    return {
-        "team_id": db_team.team_id,
-        "team_name": db_team.team_name,
-        "team_description": db_team.team_description,
-        "team_color": db_team.team_color,
-        "is_public": db_team.is_public,
-        "stats": team_stats,
-        "members": db_users
-    }
+    return build_team_data(db, db_team, details= True)
 
 @router.get("/", response_model=List[TeamModelResponse])
 def get_all_teams(limit: int | None = None, db: Session = Depends(get_db)):
@@ -43,13 +46,7 @@ def get_all_teams(limit: int | None = None, db: Session = Depends(get_db)):
     db_teams = team_crud.get_all_teams(db, limit)
 
     return [
-        {
-            "team_id": team.team_id,
-            "team_name": team.team_name,
-            "team_color": team.team_color,
-            "is_public": team.is_public,
-            "stats": team_crud.get_team_stats(db, team.team_id),
-        }
+        build_team_data(db, team, details = False)
         for team in db_teams
     ]
 
@@ -59,9 +56,7 @@ def search_teams_by_name(
         limit: int = 100,
         db: Session = Depends(get_db)
     ):
-    """
-        Retorna los equipos cuyo nombre contenga el texto enviado.
-    """
+    """Retorna los equipos cuyo nombre contenga el texto enviado."""
     db_teams = team_crud.search_teams_by_name(db, team_name, limit)
     if not db_teams:
             raise HTTPException(
@@ -70,13 +65,7 @@ def search_teams_by_name(
             )
 
     return [
-        {
-            "team_id": team.team_id,
-            "team_name": team.team_name,
-            "team_color": team.team_color,
-            "is_public": team.is_public,
-            "stats": team_crud.get_team_stats(db, team.team_id),
-        }
+        build_team_data(db, team, details = False)
         for team in db_teams
     ]
 
@@ -91,18 +80,7 @@ def get_team_by_id(team_id: int, db: Session = Depends(get_db)):
             detail="Equipo no encontrado"
         )
     
-    team_stats = team_crud.get_team_stats(db, team_id)
-    db_users = user_crud.get_team_members_response(db, team_id)
-    
-    return {
-        "team_id": db_team.team_id,
-        "team_name": db_team.team_name,
-        "team_description": db_team.team_description,
-        "team_color": db_team.team_color,
-        "is_public": db_team.is_public,
-        "stats": team_stats,
-        "members": db_users
-    }
+    return build_team_data(db, db_team, details= True)
     
 @router.patch("/", response_model=TeamModelResponse)
 def update_team(
@@ -110,11 +88,9 @@ def update_team(
         current_user: models.Users = Depends(get_current_user),
         db: Session = Depends(get_db)
     ):
-    """
-    Actualiza datos del perfil de equipo.
-    """
+    """Actualiza datos del perfil de equipo."""
     team_id = current_user.user_team
-    db_team = team_crud.get_team_by_id(db, team_id=team_id)
+    db_team = team_crud.get_team_by_id(db, team_id)
     if not db_team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -125,16 +101,15 @@ def update_team(
             status_code=403,
             detail="Solo el lider pueden realizar esta acción"
         )
-    return team_crud.update_team(db=db, db_team=db_team, team_update=team_update)
+    team_crud.update_team(db, db_team, team_update)
+    return build_team_data(db, db_team, details= True)
 
 @router.delete("/mine", status_code=status.HTTP_204_NO_CONTENT)
 def delete_team(
         current_user: models.Users = Depends(get_current_user),
         db: Session = Depends(get_db)
     ):
-    """
-    Elimina el equipo del usuario autenticado de la base de datos.
-    """
+    """Elimina el equipo del usuario autenticado de la base de datos."""
     team_crud.delete_team(db, current_user)
 
 @router.patch("/{team_id}/me/join", response_model=UserResponse)
@@ -143,51 +118,70 @@ def join_team(
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
-    """
-    Inscribe al usuario autenticado en un equipo, actualizando user.team_id.
-    """
-    return user_crud.user_join_team(db, current_user, team_id)
+    """Inscribe al usuario autenticado en un equipo, actualizando user.team_id."""
+    user_crud.assign_user_to_team(db, current_user, team_id, TeamRole.member)
+    return get_user_response(db, current_user)
 
 @router.patch("/me/leave", response_model=UserResponse)
 def leave_team(
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
-    """
-    Elimina al usuario autenticado de su equipo, actualizando user.user_team en Null
-    """
-    return user_crud.exit_team(db, current_user)
+    """Elimina al usuario autenticado de su equipo, actualizando user.user_team en Null"""
+    user_crud.remove_user_from_team(db, current_user)
+    return get_user_response(db, current_user)
 
-@router.patch("/members/{user_id}/kick", response_model=UserResponse)
+@router.patch("/members/{user_id}/kick", response_model=TeamResponse)
 def kick_from_team(
         user_id: int,
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
-    """
-    Elimina a un usuario de su equipo, actualizando user.user_team en Null.
-    """
+    """Elimina al usuario seleccionado de su equipo, actualizando user.user_team en Null."""
     if not user_crud.is_moderator(current_user):
         raise HTTPException(
             status_code=403,
             detail="Solo moderadores pueden realizar esta acción"
         )
-    return user_crud.kick_from_team(db, current_user, user_id)
+    
+    user_db = user_in_team(db, user_id, current_user.user_team)
+    user_crud.remove_user_from_team(db, user_db)
 
-@router.patch("/members/{user_id}/role", response_model=UserResponse)
-def update_team_role(
+    db_team = team_crud.get_team_by_id(db, current_user.user_team)
+    return build_team_data(db, db_team, details= True)
+
+@router.patch("/members/{user_id}/promote", response_model=TeamResponse)
+def promote_member(
         user_id: int,
-        team_role: int,
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
-    """
-    Actualiza el rol de equipo de un usuario, actualizando user.team_role.
-    """
+    """Promueve el rol de equipo de un usuario, dado su id."""
     if not user_crud.is_leader(current_user):
         raise HTTPException(
             status_code=403,
             detail="Solo el lider pueden realizar esta acción"
         )
-    return user_crud.change_team_role(db, current_user, user_id, team_role)
+    user_db = user_in_team(db, user_id, current_user.user_team)
+    user_crud.promote_team_role(db, current_user, user_db)
 
+    db_team = team_crud.get_team_by_id(db, current_user.user_team)
+    return build_team_data(db, db_team, details= True)
+
+@router.patch("/members/{user_id}/demote", response_model=TeamResponse)
+def demote_member(
+        user_id: int,
+        current_user: models.Users = Depends(get_current_user), 
+        db: Session = Depends(get_db)
+    ):
+    """Denigra el rol de equipo de un usuario, dado su id."""
+    if not user_crud.is_leader(current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="Solo el lider pueden realizar esta acción"
+        )
+    user_db = user_in_team(db, user_id, current_user.user_team)
+    user_crud.demote_team_role(db, user_db)
+
+    db_team = team_crud.get_team_by_id(db, current_user.user_team)
+    return build_team_data(db, db_team, details= True)

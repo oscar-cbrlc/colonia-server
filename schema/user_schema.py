@@ -34,10 +34,10 @@ class UserUpdate(BaseModel):
 class UserAvatarResponse(BaseModel):
     user_thumbnail: Optional[str] = None
     model_url: str
-    avatar_head: Optional[int] = None
-    avatar_neck: Optional[int] = None
-    avatar_body: Optional[int] = None
-    avatar_footwear: Optional[int] = None
+    avatar_head: Optional[str] = None
+    avatar_neck: Optional[str] = None
+    avatar_body: Optional[str] = None
+    avatar_footwear: Optional[str] = None
     avatar_color: int
 
 class UserStatsResponse(BaseModel):
