@@ -135,14 +135,14 @@ def reject_request(
 
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
 def delete_request(
-        request_id: int,
+        team_id: int,
         current_user: models.Users = Depends(get_current_user),  
         db: Session = Depends(get_db)
     ):
     """
     Elimina solicitudes del usuario autenticado.
     """
-    db_request = team_request_crud.get_request_by_id(db, request_id)
+    db_request = team_request_crud.get_request_by_id(db, current_user.user_id, team_id)
     
     if not db_request:
         raise HTTPException(
@@ -157,6 +157,6 @@ def delete_request(
             detail="Solicitud no pertenece a usuario."
         )
     
-    team_request_crud.delete_request(db, request_id)
+    team_request_crud.delete_request(db, current_user.user_id, team_id)
     return
 
