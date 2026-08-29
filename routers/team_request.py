@@ -81,7 +81,7 @@ def get_all_request_for_team(
         for request, user in results
     ]
 
-@router.patch("/{request_id}/accept", response_model=TeamRequestResponse)
+@router.patch("/{user_id}/accept", response_model=TeamRequestResponse)
 def accept_request(
         user_id: int, 
         current_user: models.Users = Depends(get_current_user), 
@@ -100,14 +100,14 @@ def accept_request(
         )
 
     db_user = user_crud.get_user_by_id(db, db_request.user_id)
-    user_crud.assign_user_to_team(db_user, current_user.user_team, TeamRole.member)
+    user_crud.assign_user_to_team(db, db_user, current_user.user_team, TeamRole.member)
     team_request_crud.delete_all_requests_by_user(db, db_request.user_id)
     return {
             "request_timestamp": db_request.request_timestamp,
             "user": db_user
         }
 
-@router.patch("/{request_id}/reject", response_model=TeamRequestResponse)
+@router.patch("/{user_id}/reject", response_model=TeamRequestResponse)
 def reject_request(
         user_id: int, 
         current_user: models.Users = Depends(get_current_user), 
