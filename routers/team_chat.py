@@ -27,7 +27,7 @@ def register(
             detail="El usuario no pertenece a un equipo."
         )
     
-    db_message = team_chat_crud.create_message(db, current_user, message_in, False)
+    db_message = team_chat_crud.create_user_message(db, current_user, message_in)
     return build_chat_message_data(db, db_message)
 
 @router.get("/", response_model=List[MessageResponse])
