@@ -5,7 +5,7 @@ from crud import user_crud
 from fastapi import HTTPException, status
 
 def get_request_by_id(db: Session, user_id: int, team_id: int):
-    """Busca una solicitudes por su ID."""
+    """Busca una solicitud por su ID."""
     return (
         db.query(models.TeamRequest)
         .filter(
@@ -63,9 +63,7 @@ def create_request(db: Session, current_user: models.Users, request_in: RequestC
     return db_request
 
 def delete_request(db: Session, user_id: int, team_id: int):
-    """
-    Elimina una solicitud de la base de datos.
-    """
+    """Elimina una solicitud de la base de datos."""
     db_request = get_request_by_id(db, user_id, team_id)
 
     if not db_request:
@@ -78,9 +76,7 @@ def delete_request(db: Session, user_id: int, team_id: int):
     db.commit()
 
 def delete_all_requests_by_user(db: Session, user_id: int) -> int:
-    """
-    Elimina todas las solicitudes de un usuario.
-    """
+    """Elimina todas las solicitudes de un usuario."""
 
     user_requests = (
         db.query(models.TeamRequest)

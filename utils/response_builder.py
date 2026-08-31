@@ -9,6 +9,7 @@ from schema.user_schema import (
     UserTeamResponse
 )
 from schema.team_schema import TeamMember
+from schema.team_chat_schema import MessageUserResponse, MessageResponse
 from enums.enum_types import TeamRole, UserType
 from config import settings
 
@@ -120,9 +121,7 @@ def build_team_member_response(user: models.Users):
     )
 
 def build_team_data(db: Session, db_team: models.Team, details: bool = False):
-    """
-    Obtener los datos completos de un equipo para TeamResponse.
-    """
+    """Obtener los datos completos de un equipo para TeamResponse."""
 
     data = {
         "team_id": db_team.team_id,
@@ -143,3 +142,23 @@ def build_team_data(db: Session, db_team: models.Team, details: bool = False):
         ]
 
     return data
+    
+def build_chat_message_data(db: Session, db_message: models.TeamChat):
+    """Construir Response para mensaje de chat."""
+    user_data = None
+    if not db_message.is_from_system:
+        db_user = user_crud.get_user_by_id(db, db_message.user_id)
+        user_data = MessageUserResponse(
+            user_id = db_user.user_id,
+            user_thumbnail = db_user.user_thumbnail,
+            username = db_user.user_name,
+            role = TeamRole(db_user.team_role).name
+        )
+
+    return {
+        "message_id": db_message.message_id,
+        "chat_message": db_message.chat_message,
+        "message_date": db_message.message_date,
+        "is_from_system": db_message.is_from_system,
+        "user": user_data
+    }

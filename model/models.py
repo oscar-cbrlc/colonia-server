@@ -419,17 +419,18 @@ class TeamChat(Base):
     __table_args__ = (
         ForeignKeyConstraint(['team_id'], ['team.team_id'], ondelete='CASCADE', onupdate='CASCADE', name='team_chat_fk'),
         ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='user_team_chat_fk'),
-        PrimaryKeyConstraint('chat_id', name='team_chat_pkey')
+        PrimaryKeyConstraint('message_id', name='team_chat_pkey')
     )
 
-    chat_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    message_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
     team_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
     chat_message: Mapped[str] = mapped_column(Text, nullable=False)
     message_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    is_from_system: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
+    user_id: Mapped[Optional[int]] = mapped_column(Integer)
 
     team: Mapped['Team'] = relationship('Team', back_populates='team_chat')
-    user: Mapped['Users'] = relationship('Users', back_populates='team_chat')
+    user: Mapped[Optional['Users']] = relationship('Users', back_populates='team_chat')
 
 
 class TeamRequest(Base):
