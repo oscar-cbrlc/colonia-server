@@ -48,6 +48,7 @@ class UserTeamResponse(BaseModel):
     team_id: int
     team_name: str
     team_role: str
+    team_color: int
 
 class UserBaseResponse(BaseModel):
     user_id: int
