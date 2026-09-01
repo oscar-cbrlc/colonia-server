@@ -79,7 +79,7 @@ def build_user_data(db: Session, db_user: models.Users):
                 team_id = db_team.team_id,
                 team_name = db_team.team_name,
                 team_role = TeamRole(db_user.team_role).name,
-                team_color = db_team.color
+                team_color = db_team.team_color
             )
 
     return avatar, stats, team
