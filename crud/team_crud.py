@@ -117,7 +117,7 @@ def delete_team(db: Session, current_user: models.Users):
             detail="No se puede eliminar un equipo que aún tiene miembros."
         )
     
-    user_crud.remove_user_from_team(db, current_user)
+    user_crud.remove_user_from_team(db, current_user, is_kick=False)
     db.flush()
     db.delete(db_team)
     db.commit()
@@ -126,7 +126,7 @@ def remove_all_team_users(db: Session, team_id: int):
     """Remueve todos los usuarios de un equipo"""
     team_users = user_crud.get_all_team_users(db, team_id)
     for user in team_users:
-        user_crud.remove_user_from_team(db, user)
+        user_crud.remove_user_from_team(db, user, is_kick=True)
     return team_users
 
 def admin_delete(db: Session, team_id: int):

@@ -10,7 +10,7 @@ from schema.user_schema import (
 )
 from schema.team_schema import TeamMember
 from schema.team_chat_schema import MessageUserResponse, MessageResponse
-from enums.enum_types import TeamRole, UserType
+from enums.enum_types import TeamRole, UserType, Message_Type
 from config import settings
 
 def search_item_data(db: Session, item_id: int):
@@ -113,7 +113,6 @@ def get_user_base_response(db: Session, db_user: models.Users):
 
 def build_team_member_response(user: models.Users):
     """Obtiene datos de los miembros de un equipo."""
-    
     return TeamMember(
         user_id = user.user_id,
         user_name = user.user_name,
@@ -123,7 +122,6 @@ def build_team_member_response(user: models.Users):
 
 def build_team_data(db: Session, db_team: models.Team, details: bool = False):
     """Obtener los datos completos de un equipo para TeamResponse."""
-
     data = {
         "team_id": db_team.team_id,
         "team_name": db_team.team_name,
@@ -141,25 +139,27 @@ def build_team_data(db: Session, db_team: models.Team, details: bool = False):
             build_team_member_response(user)
             for user in users
         ]
-
     return data
     
 def build_chat_message_data(db: Session, db_message: models.TeamChat):
     """Construir Response para mensaje de chat."""
-    user_data = None
-    if not db_message.is_from_system:
-        db_user = user_crud.get_user_by_id(db, db_message.user_id)
-        user_data = MessageUserResponse(
-            user_id = db_user.user_id,
-            user_thumbnail = db_user.user_thumbnail,
-            username = db_user.user_name,
-            role = TeamRole(db_user.team_role).name
-        )
+    db_user = user_crud.get_user_by_id(db, db_message.user_id)
 
-    return {
-        "message_id": db_message.message_id,
-        "chat_message": db_message.chat_message,
-        "message_date": db_message.message_date,
-        "is_from_system": db_message.is_from_system,
-        "user": user_data
-    }
+    user_role = None
+    if db_user.user_team is not None:
+        user_role = TeamRole(db_user.team_role).name
+
+    user_data = MessageUserResponse(
+        user_id = db_user.user_id,
+        user_thumbnail = db_user.user_thumbnail,
+        username = db_user.user_name,
+        role = user_role
+    )
+
+    return MessageResponse(
+        message_id = db_message.message_id,
+        chat_message = db_message.chat_message,
+        message_date = db_message.message_date,
+        message_type = Message_Type(db_message.message_type).name,
+        user = user_data
+    )

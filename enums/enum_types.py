@@ -37,3 +37,9 @@ class Reward_Type(IntEnum):
 class Offer_Type(IntEnum):
     item = 1
     bundle = 2
+
+class Message_Type(IntEnum):
+    user_message = 1
+    team_join = 2
+    team_exit = 3
+    team_kick = 4

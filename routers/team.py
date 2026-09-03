@@ -128,7 +128,7 @@ def leave_team(
         db: Session = Depends(get_db)
     ):
     """Elimina al usuario autenticado de su equipo, actualizando user.user_team en Null"""
-    user_crud.remove_user_from_team(db, current_user)
+    user_crud.remove_user_from_team(db, current_user, is_kick=False)
     return get_user_response(db, current_user)
 
 @router.patch("/members/{user_id}/kick", response_model=TeamResponse)
@@ -145,7 +145,7 @@ def kick_from_team(
         )
     
     user_db = user_in_team(db, user_id, current_user.user_team)
-    user_crud.remove_user_from_team(db, user_db)
+    user_crud.remove_user_from_team(db, user_db, is_kick=True)
 
     db_team = team_crud.get_team_by_id(db, current_user.user_team)
     return build_team_data(db, db_team, details= True)

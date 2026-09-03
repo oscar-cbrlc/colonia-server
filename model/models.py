@@ -52,6 +52,18 @@ class Bundle(Base):
     store_catalog: Mapped[list['StoreCatalog']] = relationship('StoreCatalog', back_populates='bundle')
 
 
+class ChatMessageType(Base):
+    __tablename__ = 'chat_message_type'
+    __table_args__ = (
+        PrimaryKeyConstraint('message_type_id', name='chat_message_type_pkey'),
+    )
+
+    message_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    message_type_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='chat_message_type')
+
+
 class NotificationType(Base):
     __tablename__ = 'notification_type'
     __table_args__ = (
@@ -417,6 +429,7 @@ class ObtainedAchievements(Base):
 class TeamChat(Base):
     __tablename__ = 'team_chat'
     __table_args__ = (
+        ForeignKeyConstraint(['message_type'], ['chat_message_type.message_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='message_type_fk'),
         ForeignKeyConstraint(['team_id'], ['team.team_id'], ondelete='CASCADE', onupdate='CASCADE', name='team_chat_fk'),
         ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='user_team_chat_fk'),
         PrimaryKeyConstraint('message_id', name='team_chat_pkey')
@@ -426,9 +439,10 @@ class TeamChat(Base):
     team_id: Mapped[int] = mapped_column(Integer, nullable=False)
     chat_message: Mapped[str] = mapped_column(Text, nullable=False)
     message_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
-    is_from_system: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
+    message_type: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
     user_id: Mapped[Optional[int]] = mapped_column(Integer)
 
+    chat_message_type: Mapped['ChatMessageType'] = relationship('ChatMessageType', back_populates='team_chat')
     team: Mapped['Team'] = relationship('Team', back_populates='team_chat')
     user: Mapped[Optional['Users']] = relationship('Users', back_populates='team_chat')
 

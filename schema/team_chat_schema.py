@@ -9,12 +9,12 @@ class MessageUserResponse(BaseModel):
     user_id: int
     user_thumbnail: Optional[str] = None
     username: str
-    role: str
+    role: Optional[str] = None
 
 class MessageResponse(BaseModel):
     message_id: int
     chat_message: str
     message_date: datetime
-    is_from_system: bool
+    message_type: str
     user: Optional[MessageUserResponse] = None
     model_config = ConfigDict(from_attributes=True)
