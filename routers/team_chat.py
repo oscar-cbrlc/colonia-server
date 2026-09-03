@@ -6,7 +6,7 @@ from utils.auth import get_current_user
 from crud import team_chat_crud, user_crud
 from typing import List
 from model import models
-from enums.enum_types import TeamRole
+from enums.enum_types import TeamRole, Message_Type
 from utils.response_builder import build_chat_message_data
 
 router = APIRouter(
@@ -68,7 +68,7 @@ def delete_message(
             detail="Mensaje no encontrado"
         )
 
-    if(db_message.is_from_system):
+    if(db_message.message_type > Message_Type.user_message):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No es posible eliminar un mensaje del sistema"
