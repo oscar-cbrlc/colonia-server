@@ -83,7 +83,7 @@ def delete_message(
                 detail="Solo el lider y los moderadores de equipo pueden eliminar mensajes de otros usuarios."
             )
 
-        message_user = user_crud.get_user_by_id(db_message.user_id)
+        message_user = user_crud.get_user_by_id(db, db_message.user_id)
         if(message_user.team_role == TeamRole.moderator):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
