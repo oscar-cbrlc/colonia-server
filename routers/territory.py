@@ -1,10 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from schema.territory_schema import TerritoryCreate, TerritoryUpdate, TerritoryResponse
-from schema.team_schema import TeamResponse
-from crud import territory_crud, team_crud
-from typing import List, Optional
+from schema.territory_schema import (
+    TerritoryCreate, 
+    TerritoryUpdate, 
+    TerritoryResponse, 
+    TerritoryListUpdate,
+    TerritoryImpactResponse
+)
+from crud import territory_crud
+from typing import List
+from utils.auth import get_current_user
 from model import models
 
 router = APIRouter(
@@ -76,11 +82,8 @@ def update_territory(territory_update: TerritoryUpdate,db: Session = Depends(get
             detail="Territorio no encontrado"
         )
     
-    territory_crud.update_territory(db,db_territory,territory_update)
-    result = territory_crud.get_territory_by_id(
-        db,
-        territory_id
-    )
+    territory_crud.update_territory(db, db_territory, territory_update)
+    result = territory_crud.get_territory_by_id(db, territory_id)
     db_territory, db_team = result
 
     return {
@@ -88,3 +91,18 @@ def update_territory(territory_update: TerritoryUpdate,db: Session = Depends(get
         "health_points": db_territory.health_points,
         "team": db_team
     }
+
+@router.patch("/apply-points",response_model=TerritoryImpactResponse)
+def apply_territory_impact(
+        impact_in: TerritoryListUpdate,
+        current_user: models.Users = Depends(get_current_user),
+        db: Session = Depends(get_db)
+    ):
+    """Aplica los puntos obtenidos durante una sesiónde entrenamiento a los territorios recorridos."""
+    if current_user.user_team is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El usuario no pertenece a ningún equipo."
+        )
+
+    return territory_crud.apply_training_impact(db, current_user, impact_in)
