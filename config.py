@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     jwt_expires_minutes: int = Field(alias="JWT_EXPIRES_MINUTES", default=1440)
     environment: str = Field(alias="ENVIRONMENT", default="development")
     member_limit: int = 25
+    base_territory_health: int = 1000
+    max_territory_health: int = 5000
     model_url: str
     model_config = SettingsConfigDict(env_file=".env", extra='ignore')
 
