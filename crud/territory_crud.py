@@ -66,18 +66,15 @@ def create_territory(db: Session, territory_in: TerritoryCreate):
     """Crea un nuevo territorio en la base de datos"""
     db_territory = models.Territory(
         territory_id = territory_in.territory_id,
-        team_id = territory_in.team_id,
-        health_points = territory_in.health_points
+        team_id = None,
+        health_points = settings.base_territory_health
     )
     db.add(db_territory)
-    db.commit()
-    db.refresh(db_territory)
-
+    db.flush()
     return db_territory
 
 def update_territory(
         db: Session,
-        current_user: models.Users,
         db_territory: models.Territory, 
         territory_update: TerritoryUpdate
     ):
@@ -100,6 +97,10 @@ def update_territory(
 
 def get_locked_territory(db: Session,territory_id: str):
     """Obtiene y bloquea un territorio para evitar modificaciones simultáneas."""
+    db.execute(
+        text("SELECT pg_advisory_xact_lock(hashtext(:territory_id))"),
+        {"territory_id": territory_id}
+    )
     return (
         db.query(models.Territory)
         .filter(
@@ -176,7 +177,10 @@ def apply_training_impact(
             territory = get_locked_territory(db, territory_input.territory_id)
 
             if territory is None:
-                continue
+                new_territory = TerritoryCreate(
+                    territory_id = territory_input.territory_id
+                )
+                territory = create_territory(db, new_territory)
 
             points = round_points(territory_input.points)
             action = apply_points(territory,locked_user.user_team,points)

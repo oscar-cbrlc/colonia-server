@@ -18,21 +18,9 @@ router = APIRouter(
     tags=["Territorios"]
 )
 
-@router.post("/", response_model=TerritoryResponse, status_code=status.HTTP_201_CREATED)
-def register(
-        territory_in: TerritoryCreate,
-        db: Session = Depends(get_db)
-    ):
-    """
-    Registra un nuevo territorio
-    """
-    return territory_crud.create_territory(db, territory_in)
-
 @router.get("/{territory_id}", response_model=TerritoryResponse)
 def get_territory(territory_id: str, db: Session = Depends(get_db)):
-    """
-    Retorna la información de un territorio, dado su id.
-    """
+    """Retorna la información de un territorio, dado su id."""
     result = territory_crud.get_territory_by_id(db, territory_id)
     if not result:
         raise HTTPException(
@@ -49,9 +37,7 @@ def get_territory(territory_id: str, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=List[TerritoryResponse])
 def get_all_territories(limit: int | None = None, db: Session = Depends(get_db)):
-    """
-    Retorna la información de todos los territorios.
-    """
+    """Retorna la información de todos los territorios."""
     results = territory_crud.get_all_territories(db, limit)
     if not results:
             raise HTTPException(
@@ -70,9 +56,7 @@ def get_all_territories(limit: int | None = None, db: Session = Depends(get_db))
 
 @router.patch("/", response_model=TerritoryResponse)
 def update_territory(territory_update: TerritoryUpdate,db: Session = Depends(get_db)):
-    """
-    Actualiza datos de un territorio.
-    """
+    """Actualiza datos de un territorio."""
     territory_id = territory_update.territory_id
     db_territory = territory_crud.get_territory_model_by_id(db,territory_id)
 
