@@ -60,7 +60,10 @@ def build_user_data(db: Session, db_user: models.Users):
 
     stats = UserStatsResponse(
         total_distance = db_user.total_distance,
-        total_time = db_user.total_time
+        total_time = db_user.total_time,
+        total_attack = db_user.total_attack,
+        total_defence = db_user.total_defence,
+        territories_captured = db_user.territories_captured
     )
 
     team = None

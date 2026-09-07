@@ -18,6 +18,9 @@ class UserUpdate(BaseModel):
 
     total_distance: Optional[float] = None
     total_time: Optional[float] = None
+    total_attack: Optional[int] = None
+    total_defence: Optional[int] = None
+    territories_captured: Optional[int] = None
     
     user_team: Optional[int] = None
     team_role: Optional[int] = None
@@ -43,6 +46,9 @@ class UserAvatarResponse(BaseModel):
 class UserStatsResponse(BaseModel):
     total_distance: float = 0.0
     total_time: float = 0.0
+    total_attack: int = 0
+    total_defence: int = 0
+    territories_captured: int = 0
 
 class UserTeamResponse(BaseModel):
     team_id: int

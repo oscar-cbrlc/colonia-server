@@ -143,18 +143,6 @@ class TeamRole(Base):
     users: Mapped[list['Users']] = relationship('Users', back_populates='team_role_')
 
 
-class Training(Base):
-    __tablename__ = 'training'
-    __table_args__ = (
-        PrimaryKeyConstraint('training_id', name='training_pkey'),
-    )
-
-    training_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    training_name: Mapped[str] = mapped_column(Text, nullable=False)
-    attack_points: Mapped[int] = mapped_column(Integer, nullable=False)
-    defence_points: Mapped[int] = mapped_column(Integer, nullable=False)
-
-
 class UserType(Base):
     __tablename__ = 'user_type'
     __table_args__ = (
@@ -314,6 +302,9 @@ class Users(Base):
     user_type: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
     avatar_color: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('13398016'))
     coin_amount: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    total_attack: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    total_defence: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    territories_captured: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
     user_team: Mapped[Optional[int]] = mapped_column(Integer)
     team_role: Mapped[Optional[int]] = mapped_column(Integer)
     avatar_head: Mapped[Optional[int]] = mapped_column(Integer)
