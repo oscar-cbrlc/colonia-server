@@ -144,6 +144,9 @@ def apply_training_impact(
     
     """Aplica un paquete de entrenamiento completo en una sola transaccion."""
     results: list[TerritoryImpactResult] = []
+    total_attack_points = 0
+    total_defence_points = 0
+    territories_captured = 0
 
     try:
         # Bloquea al usuario
@@ -156,7 +159,7 @@ def apply_training_impact(
             .one()
         )
 
-        # Actualiza estadísticas del usuario
+        # Actualiza estadísticas de distancia y tiempo
         locked_user.total_distance = (
             Decimal(locked_user.total_distance or 0)
             + impact_in.total_distance
@@ -183,7 +186,16 @@ def apply_training_impact(
                 territory = create_territory(db, new_territory)
 
             points = round_points(territory_input.points)
-            action = apply_points(territory,locked_user.user_team,points)
+            action = apply_points(territory, locked_user.user_team, points)
+
+            match action:
+                case "defend":
+                    total_defence_points += points
+                case "attack":
+                    total_attack_points += points
+                case "capture":
+                    territories_captured += 1
+                    total_attack_points += points
 
             # Obtener información del equipo
             team = None
@@ -200,29 +212,44 @@ def apply_training_impact(
             team_response = None
             if team:
                 team_response = TerritoryOwnerResponse(
-                    team_id=team.team_id,
-                    team_name=team.team_name,
-                    team_color=team.team_color
+                    team_id = team.team_id,
+                    team_name = team.team_name,
+                    team_color = team.team_color
                 )
 
             results.append(
                 TerritoryImpactResult(
-                    territory_id=territory.territory_id,
-                    team=team_response,
-                    health_points=territory.health_points,
-                    action=action
+                    territory_id = territory.territory_id,
+                    team = team_response,
+                    health_points = territory.health_points,
+                    action = action
                 )
             )
+
+        # Actualiza estadísticas de usuario relacionadas a puntaje
+        locked_user.total_attack = (
+            int(locked_user.total_attack or 0)
+            + total_attack_points
+        )
+
+        locked_user.total_defence = (
+            int(locked_user.total_defence or 0)
+            + total_defence_points
+        )
+        locked_user.territories_captured = (
+            int(locked_user.territories_captured or 0)
+            + territories_captured
+        )
         db.commit()
 
         return TerritoryImpactResponse(
-            user=UserImpactResult(
-                user_id=locked_user.user_id,
-                user_name=locked_user.user_name,
-                total_distance=locked_user.total_distance,
-                total_time=locked_user.total_time
+            user = UserImpactResult(
+                user_id = locked_user.user_id,
+                user_name = locked_user.user_name,
+                total_distance = locked_user.total_distance,
+                total_time = locked_user.total_time
             ),
-            territories=results
+            territories = results
         )
 
     except Exception:
