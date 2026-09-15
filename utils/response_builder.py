@@ -10,6 +10,7 @@ from schema.user_schema import (
 )
 from schema.team_schema import TeamMember
 from schema.team_chat_schema import MessageUserResponse, MessageResponse
+from schema.boost_inventory_schema import BoostInventoryResponse
 from enums.enum_types import TeamRole, UserType, Message_Type
 from config import settings
 
@@ -165,4 +166,15 @@ def build_chat_message_data(db: Session, db_message: models.TeamChat):
         message_date = db_message.message_date,
         message_type = Message_Type(db_message.message_type).name,
         user = user_data
+    )
+
+def build_boost_inventory_response(inventory: models.BoostInventory, boost: models.Boost):
+    """Construir Response para inventario de potenciadores de usuario."""
+
+    return BoostInventoryResponse(
+        boost_id = inventory.boost_id,
+        inventory_quantity = inventory.boost_amount,
+        boost_name = boost.boost_name,
+        boost_description = boost.boost_description,
+        boost_effect = boost.boost_effect
     )

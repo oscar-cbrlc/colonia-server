@@ -4,13 +4,11 @@ from sqlalchemy.orm import Session
 from model import models
 from schema.boost_schema import BoostCreate, BoostUpdate
 
-def get_boosts(db: Session, skip: int = 0, limit: int = 100):
+def get_all_boosts(db: Session):
     """Retorna el catalogo de potenciadores ordenado por identificador."""
     return (
         db.query(models.Boost)
         .order_by(models.Boost.boost_id)
-        .offset(skip)
-        .limit(limit)
         .all()
     )
 

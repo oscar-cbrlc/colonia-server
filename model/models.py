@@ -10,6 +10,18 @@ class Base(DeclarativeBase):
     pass
 
 
+class AchievementType(Base):
+    __tablename__ = 'achievement_type'
+    __table_args__ = (
+        PrimaryKeyConstraint('achievement_type_id', name='achievement_type_pkey'),
+    )
+
+    achievement_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    achievement_type_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    achievement: Mapped[list['Achievement']] = relationship('Achievement', back_populates='achievement_type_')
+
+
 class AvatarItemType(Base):
     __tablename__ = 'avatar_item_type'
     __table_args__ = (
@@ -32,7 +44,6 @@ class Boost(Base):
     boost_name: Mapped[str] = mapped_column(Text, nullable=False)
     boost_description: Mapped[str] = mapped_column(Text, nullable=False)
     boost_effect: Mapped[decimal.Decimal] = mapped_column(Numeric, nullable=False)
-    boost_image: Mapped[str] = mapped_column(Text, nullable=False)
 
     reward: Mapped[list['Reward']] = relationship('Reward', back_populates='boost')
     boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='boost')
@@ -155,6 +166,24 @@ class UserType(Base):
     users: Mapped[list['Users']] = relationship('Users', back_populates='user_type_')
 
 
+class Achievement(Base):
+    __tablename__ = 'achievement'
+    __table_args__ = (
+        ForeignKeyConstraint(['achievement_type'], ['achievement_type.achievement_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='achievement_type_fk'),
+        PrimaryKeyConstraint('achievement_id', name='achievement_pkey')
+    )
+
+    achievement_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    achievement_name: Mapped[str] = mapped_column(Text, nullable=False)
+    achievement_description: Mapped[str] = mapped_column(Text, nullable=False)
+    achievement_image: Mapped[str] = mapped_column(Text, nullable=False)
+    achievement_type: Mapped[int] = mapped_column(Integer, nullable=False)
+    achievement_objective: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    achievement_type_: Mapped['AchievementType'] = relationship('AchievementType', back_populates='achievement')
+    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='achievement')
+
+
 class AvatarItem(Base):
     __tablename__ = 'avatar_item'
     __table_args__ = (
@@ -191,7 +220,6 @@ class Objective(Base):
     objective_condition: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
     objective_type_: Mapped['ObjectiveType'] = relationship('ObjectiveType', back_populates='objective')
-    achievement: Mapped[list['Achievement']] = relationship('Achievement', back_populates='objective')
     challenge: Mapped[list['Challenge']] = relationship('Challenge', back_populates='objective')
 
 
@@ -207,23 +235,6 @@ class Territory(Base):
     team_id: Mapped[Optional[int]] = mapped_column(Integer)
 
     team: Mapped[Optional['Team']] = relationship('Team', back_populates='territory')
-
-
-class Achievement(Base):
-    __tablename__ = 'achievement'
-    __table_args__ = (
-        ForeignKeyConstraint(['achievement_objective'], ['objective.objective_id'], ondelete='CASCADE', onupdate='CASCADE', name='achievement_objective_fk'),
-        PrimaryKeyConstraint('achievement_id', name='achievement_pkey')
-    )
-
-    achievement_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    achievement_name: Mapped[str] = mapped_column(Text, nullable=False)
-    achievement_description: Mapped[str] = mapped_column(Text, nullable=False)
-    achievement_image: Mapped[str] = mapped_column(Text, nullable=False)
-    achievement_objective: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    objective: Mapped['Objective'] = relationship('Objective', back_populates='achievement')
-    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='achievement')
 
 
 t_item_bundle = Table(
