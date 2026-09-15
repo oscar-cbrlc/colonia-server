@@ -15,7 +15,7 @@ class AvatarItemType(IntEnum):
     body = 3
     footwear = 4
 
-class NotificationType(IntEnum):
+class Notification_Type(IntEnum):
     global_notification = 1
     join_team_request_recieved = 2
     join_team_request_accepted = 3
@@ -23,11 +23,18 @@ class NotificationType(IntEnum):
     team_kick = 5
     warning = 6
 
-class ObjectiveType(IntEnum):
+class Objective_Type(IntEnum):
     complete_distance = 1
     complete_time = 2
     complete_speed = 3
     complete_pace = 4
+
+class Achievement_Type(IntEnum):
+    total_distance = 1
+    total_time = 2
+    captured_territories = 3 
+    total_attack = 4
+    total_defense = 5
 
 class Reward_Type(IntEnum):
     boost = 1
