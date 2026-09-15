@@ -44,7 +44,6 @@ class Boost(Base):
     boost_name: Mapped[str] = mapped_column(Text, nullable=False)
     boost_description: Mapped[str] = mapped_column(Text, nullable=False)
     boost_effect: Mapped[decimal.Decimal] = mapped_column(Numeric, nullable=False)
-    boost_image: Mapped[str] = mapped_column(Text, nullable=False)
 
     reward: Mapped[list['Reward']] = relationship('Reward', back_populates='boost')
     boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='boost')
