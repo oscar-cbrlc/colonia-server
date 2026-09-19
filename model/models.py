@@ -34,19 +34,16 @@ class AvatarItemType(Base):
     avatar_item: Mapped[list['AvatarItem']] = relationship('AvatarItem', back_populates='avatar_item_type')
 
 
-class Boost(Base):
-    __tablename__ = 'boost'
+class BoostType(Base):
+    __tablename__ = 'boost_type'
     __table_args__ = (
-        PrimaryKeyConstraint('boost_id', name='boost_pkey'),
+        PrimaryKeyConstraint('boost_type_id', name='boost_type_pkey'),
     )
 
-    boost_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    boost_name: Mapped[str] = mapped_column(Text, nullable=False)
-    boost_description: Mapped[str] = mapped_column(Text, nullable=False)
-    boost_effect: Mapped[decimal.Decimal] = mapped_column(Numeric, nullable=False)
+    boost_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    boost_type_name: Mapped[str] = mapped_column(Text, nullable=False)
 
-    reward: Mapped[list['Reward']] = relationship('Reward', back_populates='boost')
-    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='boost')
+    boost: Mapped[list['Boost']] = relationship('Boost', back_populates='boost_type_')
 
 
 class Bundle(Base):
@@ -206,6 +203,22 @@ class AvatarItem(Base):
     users_avatar_head: Mapped[list['Users']] = relationship('Users', foreign_keys='[Users.avatar_head]', back_populates='avatar_item1')
     users_avatar_neck: Mapped[list['Users']] = relationship('Users', foreign_keys='[Users.avatar_neck]', back_populates='avatar_item2')
     avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='avatar_item')
+
+
+class Boost(Base):
+    __tablename__ = 'boost'
+    __table_args__ = (
+        ForeignKeyConstraint(['boost_type'], ['boost_type.boost_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='boost_type_fk'),
+        PrimaryKeyConstraint('boost_id', name='boost_pkey')
+    )
+
+    boost_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    boost_effect: Mapped[decimal.Decimal] = mapped_column(Numeric, nullable=False)
+    boost_type: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    boost_type_: Mapped['BoostType'] = relationship('BoostType', back_populates='boost')
+    reward: Mapped[list['Reward']] = relationship('Reward', back_populates='boost')
+    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='boost')
 
 
 class Objective(Base):

@@ -6,7 +6,7 @@ from model import models
 from schema.boost_inventory_schema import BoostInventoryUpdate, BoostInventoryResponse
 from schema.boost_schema import BoostCreate, BoostResponse, BoostUpdate
 from utils.auth import get_current_user
-from utils.response_builder import build_boost_inventory_response
+from utils.response_builder import build_boost_response, build_boost_inventory_response
 
 router = APIRouter(
     prefix="/boosts",
@@ -41,17 +41,23 @@ def create_boost(
         db: Session = Depends(get_db),
     ):
     """Crea un potenciador. Requiere permisos de administrador."""
-    return boost_crud.create_boost(db, boost_in)
+    db_boost = boost_crud.create_boost(db, boost_in)
+    return build_boost_response(db_boost)
 
 @router.get("/", response_model=list[BoostResponse])
 def list_boosts(db: Session = Depends(get_db),):
     """Retorna el catalogo de potenciadores."""
-    return boost_crud.get_all_boosts(db)
+    results = boost_crud.get_all_boosts(db)
+    return[
+        build_boost_response(db_boost)
+        for db_boost in results
+    ]
 
 @router.get("/{boost_id}", response_model=BoostResponse)
 def get_boost(boost_id: int, db: Session = Depends(get_db)):
     """Retorna un potenciador por su identificador."""
-    return get_existing_boost(boost_id, db)
+    db_boost = get_existing_boost(boost_id, db)
+    return build_boost_response(db_boost)
 
 @router.patch("/{boost_id}", response_model=BoostResponse)
 def update_boost(
@@ -62,7 +68,9 @@ def update_boost(
     ):
     """Actualiza un potenciador. Requiere permisos de administrador."""
     db_boost = get_existing_boost(boost_id, db)
-    return boost_crud.update_boost(db, db_boost, boost_in)
+    result = boost_crud.update_boost(db, db_boost, boost_in)
+    return build_boost_response(result)
+
 
 @router.delete("/{boost_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_boost(
