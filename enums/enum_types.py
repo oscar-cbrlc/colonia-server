@@ -50,3 +50,8 @@ class Message_Type(IntEnum):
     team_join = 2
     team_exit = 3
     team_kick = 4
+
+class Boost_Type(IntEnum):
+    score = 1
+    impact_area = 2
+    impact_distance = 3

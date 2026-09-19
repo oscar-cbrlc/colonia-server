@@ -1,5 +1,4 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
 from decimal import Decimal
 
 class BoostInventoryUpdate(BaseModel):
@@ -7,8 +6,7 @@ class BoostInventoryUpdate(BaseModel):
 
 class BoostInventoryResponse(BaseModel):
     boost_id: int
+    boost_type: str
     inventory_quantity: int
-    boost_name: str
-    boost_description: str
     boost_effect: Decimal
     model_config = ConfigDict(from_attributes=True)

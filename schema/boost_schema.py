@@ -1,19 +1,19 @@
 from decimal import Decimal
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel
+from typing import Optional
 
 class BoostBase(BaseModel):
-    boost_name: str = Field(min_length=1)
-    boost_description: str = Field(min_length=1)
     boost_effect: Decimal
+    boost_type: int
 
 class BoostCreate(BoostBase):
     pass
 
 class BoostUpdate(BaseModel):
-    boost_name: str | None = Field(default=None, min_length=1)
-    boost_description: str | None = Field(default=None, min_length=1)
-    boost_effect: Decimal | None = None
+    boost_effect: Optional[Decimal]
+    boost_type: Optional[int]
 
-class BoostResponse(BoostBase):
+class BoostResponse(BaseModel):
     boost_id: int
-    model_config = ConfigDict(from_attributes=True)
+    boost_effect: Decimal
+    boost_type: str
