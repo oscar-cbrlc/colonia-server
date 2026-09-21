@@ -2,7 +2,7 @@ from typing import Optional
 import datetime
 import decimal
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKeyConstraint, Identity, Integer, Numeric, PrimaryKeyConstraint, Table, Text, UniqueConstraint, text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKeyConstraint, Identity, Index, Integer, Numeric, PrimaryKeyConstraint, Table, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -350,6 +350,7 @@ class Users(Base):
     obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user', passive_deletes=True)
     team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user', passive_deletes=True)
     team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user', passive_deletes=True)
+    user_session: Mapped[list['UserSession']] = relationship('UserSession', back_populates='user', passive_deletes=True)
     started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='user', passive_deletes=True)
 
 
@@ -476,6 +477,24 @@ class TeamRequest(Base):
 
     team: Mapped['Team'] = relationship('Team', back_populates='team_request')
     user: Mapped['Users'] = relationship('Users', back_populates='team_request')
+
+
+class UserSession(Base):
+    __tablename__ = 'user_session'
+    __table_args__ = (
+        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='user_id_fk'),
+        PrimaryKeyConstraint('session_id', name='user_session_pkey'),
+        Index('idx_session_jti', 'jti')
+    )
+
+    session_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    jti: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False)
+    revoked_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True))
+
+    user: Mapped['Users'] = relationship('Users', back_populates='user_session')
 
 
 class StartedChallenges(Base):

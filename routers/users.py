@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from schema.user_schema import UserCreate,UserUpdate, UserLogin, UserLoginResponse, UserResponse, UserBaseResponse
+from schema.user_schema import UserCreate,UserUpdate, UserResponse, UserBaseResponse
 from crud import user_crud
-from utils.security import create_access_token
 from typing import List, Optional
 from utils.auth import get_current_user
 from utils.response_builder import get_user_response, get_user_base_response
@@ -12,14 +11,12 @@ from model import models
 # la ruta  raiz de cada users endpoint seria http://<api>/users
 router = APIRouter(
     prefix="/users",
-    tags=["Autenticación y Perfil de Usuario"]
+    tags=["Perfil de Usuario"]
 )
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
-    """
-    Registra un nuevo usuario, validando que el correo no esté ya registrado
-    """
+    """Registra un nuevo usuario, validando que el correo no esté ya registrado"""
     db_user = user_crud.get_user_by_email(db, email=user_in.email)
     if db_user:
         raise HTTPException(
@@ -29,35 +26,6 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     
     db_user = user_crud.create_user(db, user_in)
     return get_user_response(db, db_user)
-
-@router.post("/login", response_model=UserLoginResponse)
-def login(user_in: UserLogin, db: Session = Depends(get_db)):
-    """
-    Valida el correo y contrasena de un usuario.
-    """
-    db_user = user_crud.authenticate_user(
-        db,
-        user_in.email,
-        user_in.password
-    )
-    if not db_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Correo o contrasena incorrectos"
-        )
-    access_token = create_access_token(
-        data={
-            "sub": str(db_user.user_id),
-            "email": db_user.email
-        }
-    )
-    user_response = get_user_response(db, db_user)
-
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": user_response
-    }
 
 @router.get("/me", response_model=UserResponse)
 def get_current_user_data(
@@ -72,9 +40,7 @@ def get_current_user_data(
 
 @router.get("/{user_id}", response_model=UserBaseResponse)
 def get_user(user_id: int, db: Session = Depends(get_db)):
-    """
-    Retorna la información de un usuario en específico, dado su id.
-    """
+    """Retorna la información de un usuario en específico, dado su id."""
     db_user = user_crud.get_user_by_id(db, user_id)
     if not db_user:
         raise HTTPException(

@@ -1,7 +1,6 @@
-import base64
 import bcrypt
-import hashlib
-import hmac
+import jwt
+import secrets
 import json
 from datetime import datetime, timedelta, timezone
 from config import settings
@@ -21,107 +20,104 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         hashed_password.encode('utf-8')
     )
 
-def _base64url_encode(data: bytes) -> str:
-    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("utf-8")
+ALGORITHM = "HS256"
+SECRET_KEY = settings.jwt_secret or settings.api_key
+
+def create_token(
+        data: dict,
+        expires_delta: timedelta,
+        token_type: str,
+        jti: str | None = None
+    ) -> tuple[str, str]:
+    """Genera un JWT firmado con HS256."""
+
+    now = datetime.now(timezone.utc)
+    token_jti = jti or secrets.token_urlsafe(32)
+
+    payload = data.copy()
+    payload.update({
+        "iat": now,
+        "exp": now + expires_delta,
+        "jti": token_jti,
+        "type": token_type
+    })
+
+    token = jwt.encode(
+        payload,
+        SECRET_KEY,
+        algorithm = ALGORITHM
+    )
+    return token, token_jti
 
 def create_access_token(data: dict) -> str:
-    """Crea un JWT firmado con HS256."""
-    expires_delta = timedelta(minutes=settings.jwt_expires_minutes)
-    expire = datetime.now(timezone.utc) + expires_delta
-
-    header = {
-        "alg": "HS256",
-        "typ": "JWT"
-    }
-    payload = data.copy()
-    payload["exp"] = int(expire.timestamp())
-
-    encoded_header = _base64url_encode(
-        json.dumps(header, separators=(",", ":")).encode("utf-8")
+    """Crea un Access Token."""
+    token, _ =  create_token(
+        data = data,
+        expires_delta = timedelta(
+            minutes = settings.access_token_expires_minutes
+        ),
+        token_type="access"
     )
-    encoded_payload = _base64url_encode(
-        json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    return token
+
+def create_refresh_token(data: dict) -> tuple[str, str, datetime]:
+    """Crea un Refresh Token."""
+    expires_at = (
+        datetime.now(timezone.utc)
+        + timedelta(days = settings.refresh_token_expires_days)
     )
-    signing_input = f"{encoded_header}.{encoded_payload}".encode("utf-8")
+    token, jti = create_token(
+        data = data,
+        expires_delta = timedelta(days = settings.refresh_token_expires_days),
+        token_type="refresh"
+    )
+    return token, jti, expires_at
 
-    secret = settings.jwt_secret or settings.api_key
-    signature = hmac.new(
-        secret.encode("utf-8"),
-        signing_input,
-        hashlib.sha256
-    ).digest()
-    encoded_signature = _base64url_encode(signature)
-
-    return f"{encoded_header}.{encoded_payload}.{encoded_signature}"
-
-
-def _base64url_decode(data: str) -> bytes:
-    '''Decodificador Base64URL para verificar Token''' 
-    padding = "=" * (-len(data) % 4)
-
-    return base64.urlsafe_b64decode(data + padding)
-
-def verify_access_token(token: str) -> dict:
-    '''Verifica validez del token, retorna payload del mismo'''
+def verify_token(token: str, expected_type: str) -> dict:
+    """Verifica validez del JWT, retorna payload del mismo."""
+    
     try:
-        
-        #Verificar partes Header.Payload.Signature
-        parts = token.split(".")
-
-        if len(parts) != 3:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token inválido, partes diferentes."
-            )
-
-        encoded_header, encoded_payload, encoded_signature = parts
-
-        signing_input = f"{encoded_header}.{encoded_payload}".encode("utf-8")
-
-        secret = settings.jwt_secret or settings.api_key
-
-        expected_signature = _base64url_encode(
-            hmac.new(
-                secret.encode("utf-8"),
-                signing_input,
-                hashlib.sha256
-            ).digest()
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+            options={
+                "require": [
+                    "exp",
+                    "iat",
+                    "sub",
+                    "jti",
+                    "type"
+                ]
+            }
         )
 
-        # Comparación de token
-        if not hmac.compare_digest(expected_signature, encoded_signature):
+        if payload.get("type") != expected_type:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Firma del token inválida"
+                detail="Tipo de token inválido."
             )
-
-        # Leer payload
-        payload = json.loads(
-            _base64url_decode(encoded_payload).decode("utf-8")
-        )
-
-        # Verificar expiración
-        if payload.get("exp") is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token sin fecha de expiración"
-            )
-        
-        current_timestamp = int(datetime.now(timezone.utc).timestamp())
-        if payload["exp"] < current_timestamp:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token expirado"
-            )
-
         return payload
 
     except HTTPException:
         raise
 
-    except Exception as e:
-        print(e)
+    except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
+            detail="Token expirado."
         )
+
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido."
+        )
+
+def verify_access_token(token: str) -> dict:
+    """Verifica validez de un Access Token."""
+    return verify_token(token,expected_type="access")
+
+def verify_refresh_token(token: str) -> dict:
+    """Verifica validez de un Refresh Token."""
+    return verify_token(token,expected_type="refresh")
