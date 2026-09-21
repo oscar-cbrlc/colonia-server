@@ -37,8 +37,6 @@ def remove_boost_from_inventory(db: Session, current_user: models.Users, boost_i
     if(db_inventory.boost_amount > 0):
         db_inventory.boost_amount -= 1
 
-        db.commit()
-        db.refresh(db_inventory)
         return True
     return False 
 
