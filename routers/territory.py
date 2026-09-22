@@ -11,6 +11,7 @@ from schema.territory_schema import (
 from crud import territory_crud
 from typing import List
 from utils.auth import get_current_user
+from utils.apply_training import apply_training_impact
 from model import models
 
 router = APIRouter(
@@ -89,4 +90,4 @@ def apply_territory_impact(
             detail="El usuario no pertenece a ningún equipo."
         )
 
-    return territory_crud.apply_training_impact(db, current_user, impact_in)
+    return apply_training_impact(db, current_user, impact_in)

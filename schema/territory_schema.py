@@ -22,6 +22,7 @@ class TerritoryListUpdate(BaseModel):
     total_distance: Decimal
     total_time: int
     timestamp: datetime
+    boost_id: Optional[int] = None
     territories: list[TerritoryBase]
     
 class TerritoryOwnerResponse(BaseModel):
