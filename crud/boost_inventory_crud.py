@@ -1,4 +1,4 @@
-from sqlalchemy import delete
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from model import models
 from schema.boost_inventory_schema import BoostInventoryUpdate
@@ -19,7 +19,7 @@ def get_user_boost(db: Session, user_id: int, boost_id: int):
     """Busca un potenciador en inventario por identificador de usuario y potenciador."""
     return (
         db.query(models.BoostInventory)
-        .filter(models.BoostInventory.user_id == user_id and models.BoostInventory.boost_id == boost_id)
+        .filter(models.BoostInventory.user_id == user_id, models.BoostInventory.boost_id == boost_id)
         .first()
     )
 
@@ -38,7 +38,7 @@ def remove_boost_from_inventory(db: Session, current_user: models.Users, boost_i
         db_inventory.boost_amount -= 1
         return True
     else:
-        return False 
+        return False
 
 def update_user_boost_inventory(db: Session, db_boost_inv: models.BoostInventory, boost_in: BoostInventoryUpdate):
     """Actualiza las cantidad de un potenciador en inventario."""

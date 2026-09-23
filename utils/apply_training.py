@@ -57,14 +57,17 @@ def apply_training_impact(
 
     score_multiplier = 1
     boost_id = impact_in.boost_id
+    
     if(boost_id is not None):
         db_boost = get_existing_boost(boost_id, db)
         removed = remove_boost_from_inventory(db, current_user, boost_id)
+
         if removed is False:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Potenciador no disponible en inventario",
-                )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Potenciador no disponible en inventario",
+            )
+            
         if(db_boost.boost_type == Boost_Type.score):
             score_multiplier = db_boost.boost_effect
         
