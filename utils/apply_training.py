@@ -60,7 +60,7 @@ def apply_training_impact(
     if(boost_id is not None):
         db_boost = get_existing_boost(boost_id, db)
         removed = remove_boost_from_inventory(db, current_user, boost_id)
-        if not removed:
+        if removed is False:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Potenciador no disponible en inventario",

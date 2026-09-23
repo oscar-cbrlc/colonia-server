@@ -36,9 +36,9 @@ def remove_boost_from_inventory(db: Session, current_user: models.Users, boost_i
     db_inventory = get_user_boost(db, current_user.user_id, boost_id)
     if(db_inventory.boost_amount > 0):
         db_inventory.boost_amount -= 1
-
         return True
-    return False 
+    else:
+        return False 
 
 def update_user_boost_inventory(db: Session, db_boost_inv: models.BoostInventory, boost_in: BoostInventoryUpdate):
     """Actualiza las cantidad de un potenciador en inventario."""
