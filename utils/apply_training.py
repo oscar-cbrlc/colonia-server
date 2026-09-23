@@ -11,9 +11,11 @@ from schema.territory_schema import (
 )
 from crud.territory_crud import create_territory, get_locked_territory
 from routers.boosts import get_existing_boost
-from crud.boost_inventory_crud import get_user_boost, remove_boost_from_inventory
+from crud.boost_inventory_crud import remove_boost_from_inventory
 from decimal import Decimal, ROUND_HALF_UP
 from config import settings
+from utils.achievement_tracker import check_achievements
+from utils.response_builder import build_achievement_response
 from enums.enum_types import Boost_Type
 
 def apply_points(territory: models.Territory, user_team: int, points: Decimal) -> str:
@@ -158,7 +160,14 @@ def apply_training_impact(
             int(locked_user.territories_captured or 0)
             + territories_captured
         )
+
+        unlocked_achievements = check_achievements(db, locked_user)
         db.commit()
+        
+        achievements_results = [
+            build_achievement_response(achievement)
+            for achievement in unlocked_achievements
+        ]
 
         return TerritoryImpactResponse(
             user = UserImpactResult(
@@ -167,7 +176,8 @@ def apply_training_impact(
                 total_distance = locked_user.total_distance,
                 total_time = locked_user.total_time
             ),
-            territories = results
+            territories = results,
+            achievements = achievements_results
         )
 
     except Exception:

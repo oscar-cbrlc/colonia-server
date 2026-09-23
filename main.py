@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from database import engine, Base
-from routers import admin, boosts, health, team, users, territory, team_request, team_chat, user_session
+from routers import admin, boosts, health, team, users, territory, team_request, team_chat, user_session, achievement
 from middleware import APIKeyMiddleware
 
 Base.metadata.create_all(bind=engine)
@@ -19,3 +19,4 @@ app.include_router(boosts.router)
 app.include_router(territory.router)
 app.include_router(team_request.router)
 app.include_router(team_chat.router)
+app.include_router(achievement.router)

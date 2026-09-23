@@ -2,8 +2,8 @@ from datetime import datetime
 from decimal import Decimal
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, Literal
+from schema.achievement_schema import AchievementResponse
 from config import settings
-
 class TerritoryBase(BaseModel):
     territory_id: str
     points: Decimal
@@ -53,3 +53,4 @@ class TerritoryImpactResult(BaseModel):
 class TerritoryImpactResponse(BaseModel):
     user: UserImpactResult
     territories: list[TerritoryImpactResult]
+    achievements: Optional[list[AchievementResponse]] = None

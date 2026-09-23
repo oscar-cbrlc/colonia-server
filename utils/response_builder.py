@@ -12,7 +12,9 @@ from schema.team_schema import TeamMember
 from schema.team_chat_schema import MessageUserResponse, MessageResponse
 from schema.boost_schema import BoostResponse
 from schema.boost_inventory_schema import BoostInventoryResponse
-from enums.enum_types import TeamRole, UserType, Message_Type, Boost_Type
+from schema.achievement_schema import AchievementResponse
+from schema.obtained_achievements_schema import AchievementDetails
+from enums.enum_types import TeamRole, UserType, Message_Type, Boost_Type, Achievement_Type
 from config import settings
 
 def search_item_data(db: Session, item_id: int):
@@ -90,7 +92,7 @@ def build_user_data(db: Session, db_user: models.Users):
     return avatar, stats, team
 
 def get_user_response(db: Session, db_user: models.Users):
-    """Construir Response para usuario autentificado."""
+    """Construye Response para usuario autentificado."""
     avatar, stats, team = build_user_data(db, db_user)
 
     return UserResponse(
@@ -105,7 +107,7 @@ def get_user_response(db: Session, db_user: models.Users):
     )
 
 def get_user_base_response(db: Session, db_user: models.Users):
-    """Construir Response para usuario."""
+    """Construye Response para usuario."""
     avatar, stats, team = build_user_data(db ,db_user)
 
     return UserBaseResponse(
@@ -147,7 +149,7 @@ def build_team_data(db: Session, db_team: models.Team, details: bool = False):
     return data
     
 def build_chat_message_data(db: Session, db_message: models.TeamChat):
-    """Construir Response para mensaje de chat."""
+    """Construye Response para mensaje de chat."""
     db_user = user_crud.get_user_by_id(db, db_message.user_id)
 
     user_role = None
@@ -170,19 +172,44 @@ def build_chat_message_data(db: Session, db_message: models.TeamChat):
     )
 
 def build_boost_response(db_boost: models.Boost):
-    """Construir Response para potenciadores"""
+    """Construye Response para potenciadores"""
     return BoostResponse(
         boost_id = db_boost.boost_id,
         boost_effect = db_boost.boost_effect,
         boost_type = Boost_Type(db_boost.boost_type).name
     )
 
-def build_boost_inventory_response(inventory: models.BoostInventory, boost: models.Boost):
-    """Construir Response para inventario de potenciadores de usuario."""
+def build_boost_inventory_response(db_inventory: models.BoostInventory, db_boost: models.Boost):
+    """Construye Response para inventario de potenciadores de usuario."""
 
     return BoostInventoryResponse(
-        boost_id = inventory.boost_id,
-        boost_type = Boost_Type(boost.boost_type).name,
-        inventory_quantity = inventory.boost_amount,
-        boost_effect = boost.boost_effect
+        boost_id = db_inventory.boost_id,
+        boost_type = Boost_Type(db_boost.boost_type).name,
+        inventory_quantity = db_inventory.boost_amount,
+        boost_effect = db_boost.boost_effect
+    )
+
+def build_achievement_response(db_achievement: models.Achievement):
+    """Contruye Response para logros de usuario"""
+
+    return AchievementResponse(
+        achievement_id = db_achievement.achievement_id,
+        achievement_name = db_achievement.achievement_name,
+        achievement_type = Achievement_Type(db_achievement.achievement_type).name,
+        achievement_objective = db_achievement.achievement_objective
+    )
+
+def get_achievement_details(db_obtained_achievement: models.ObtainedAchievements, db_achievement: models.Achievement, ):
+    """Obtiene detalles de un logro"""
+
+    adquisition_date = None
+    if db_obtained_achievement is not None:
+        adquisition_date = db_obtained_achievement.achievement_acquisition_date
+
+    return AchievementDetails(
+        achievement_id = db_achievement.achievement_id,
+        achievement_name = db_achievement.achievement_name,
+        achievement_type = Achievement_Type(db_achievement.achievement_type).name,
+        achievement_objective = db_achievement.achievement_objective,
+        achievement_acquisition_date = adquisition_date
     )

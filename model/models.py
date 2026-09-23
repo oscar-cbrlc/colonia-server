@@ -172,8 +172,6 @@ class Achievement(Base):
 
     achievement_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
     achievement_name: Mapped[str] = mapped_column(Text, nullable=False)
-    achievement_description: Mapped[str] = mapped_column(Text, nullable=False)
-    achievement_image: Mapped[str] = mapped_column(Text, nullable=False)
     achievement_type: Mapped[int] = mapped_column(Integer, nullable=False)
     achievement_objective: Mapped[int] = mapped_column(Integer, nullable=False)
 
