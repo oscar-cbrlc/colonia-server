@@ -6,17 +6,17 @@ from enums.enum_types import Achievement_Type
 
 def check_achievements(db: Session, current_user: models.Users) -> list[models.Achievement]:
     """Verifica si los logros bloqueados deben ser asignados al usuario."""
-    locked = get_locked_achievements(db, current_user)
+    locked = get_locked_achievements(db, current_user.user_id)
     unlocked = []
 
     for achievement in locked:
-        if validate_achievement(db, current_user, achievement):
+        if validate_achievement(current_user, achievement):
             assign_achievement(db, current_user, achievement)
             unlocked.append(achievement)
 
     return unlocked
 
-def validate_achievement(db: Session, current_user: models.Users, db_achievement: models.Achievement) -> bool:
+def validate_achievement(current_user: models.Users, db_achievement: models.Achievement) -> bool:
     """Verifica si un logro debe ser asignado, en base a su tipo y objetivo"""
     total_distance = current_user.total_distance
     total_time = current_user.total_time
