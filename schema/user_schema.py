@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
+from schema.obtained_achievements_schema import AchievementDetails
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -62,6 +63,7 @@ class UserBaseResponse(BaseModel):
     avatar: UserAvatarResponse
     stats: UserStatsResponse
     team: Optional[UserTeamResponse]
+    achievements: list[AchievementDetails]
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -74,6 +76,7 @@ class UserResponse(BaseModel):
     avatar: UserAvatarResponse
     stats: UserStatsResponse
     team: Optional[UserTeamResponse]
+    achievements: list[AchievementDetails]
     
     model_config = ConfigDict(from_attributes=True)
 

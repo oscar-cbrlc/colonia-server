@@ -3,11 +3,10 @@ from sqlalchemy.orm import Session
 from crud import user_crud, achievement_crud, obtained_achievements_crud
 from schema.achievement_schema import AchievementCreate, AchievementUpdate, AchievementResponse
 from schema.obtained_achievements_schema import AchievementDetails
-from crud.obtained_achievements_crud import get_my_achievement_list
 from database import get_db
 from model import models
 from utils.auth import get_current_user
-from utils.response_builder import build_achievement_response, get_achievement_details
+from utils.response_builder import build_achievement_response, get_achievement_details, get_obtained_achievements_data, get_locked_achievements_data
 
 router = APIRouter(
     prefix="/achievement",
@@ -82,18 +81,8 @@ def get_my_achievements(
         db: Session = Depends(get_db)
     ):
     """Retorna la lista de logros del usuario autentificado."""
-    obtained = obtained_achievements_crud.get_my_achievement_list(db, current_user)
-    locked = obtained_achievements_crud.get_locked_achievements(db, current_user)
+    obtained = get_obtained_achievements_data(db, current_user.user_id)
+    locked = get_locked_achievements_data(db, current_user.user_id)
 
-    obtained_data = [
-        get_achievement_details(obtained_achievement, achievement)
-        for obtained_achievement, achievement in obtained
-    ]
-
-    locked_data = [
-        get_achievement_details(None, achievement)
-        for achievement in locked
-    ]
-
-    return  obtained_data + locked_data
+    return  obtained + locked
 

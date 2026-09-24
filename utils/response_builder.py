@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from model import models
-from crud import user_crud, team_crud
+from crud import user_crud, team_crud, obtained_achievements_crud
 from schema.user_schema import (
     UserResponse,
     UserBaseResponse,
@@ -24,7 +24,7 @@ def search_item_data(db: Session, item_id: int):
         .first()
     )
 
-def build_user_data(db: Session, db_user: models.Users):
+def get_user_data(db: Session, db_user: models.Users):
     """Obtener datos de un usuario para usar en Response"""
 
     # Todo - Implementar item_crud para obtener urls
@@ -93,7 +93,10 @@ def build_user_data(db: Session, db_user: models.Users):
 
 def get_user_response(db: Session, db_user: models.Users):
     """Construye Response para usuario autentificado."""
-    avatar, stats, team = build_user_data(db, db_user)
+    avatar, stats, team = get_user_data(db, db_user)
+    obtained_achievements = get_obtained_achievements_data(db, db_user.user_id)
+    locked_achievements = get_locked_achievements_data(db, db_user.user_id)
+    achievements = obtained_achievements + locked_achievements
 
     return UserResponse(
         user_id = db_user.user_id,
@@ -103,19 +106,22 @@ def get_user_response(db: Session, db_user: models.Users):
         coin_amount = db_user.coin_amount,
         avatar = avatar,
         stats = stats,
-        team = team
+        team = team,
+        achievements = achievements
     )
 
 def get_user_base_response(db: Session, db_user: models.Users):
     """Construye Response para usuario."""
-    avatar, stats, team = build_user_data(db ,db_user)
+    avatar, stats, team = get_user_data(db ,db_user)
+    achievements = get_obtained_achievements_data(db, db_user.user_id)
 
     return UserBaseResponse(
         user_id = db_user.user_id,
         user_name = db_user.user_name,
         avatar = avatar,
         stats = stats,
-        team = team
+        team = team,
+        achievements = achievements
     )
 
 def build_team_member_response(user: models.Users):
@@ -213,3 +219,22 @@ def get_achievement_details(db_obtained_achievement: models.ObtainedAchievements
         achievement_objective = db_achievement.achievement_objective,
         achievement_acquisition_date = adquisition_date
     )
+
+def get_obtained_achievements_data(db: Session, user_id: int):
+    """Obtiene los datos de los logros desbloqueados de un jugador"""
+    obtained = obtained_achievements_crud.get_user_achievement_list(db, user_id)
+
+    return  [
+        get_achievement_details(obtained_achievement, achievement)
+        for obtained_achievement, achievement in obtained
+    ]
+
+
+def get_locked_achievements_data(db: Session, user_id: int):
+    """Obtiene los datos de los logros por desbloquear de un jugador"""
+    locked = obtained_achievements_crud.get_locked_achievements(db, user_id)
+
+    return [
+        get_achievement_details(None, achievement)
+        for achievement in locked
+    ]

@@ -1,25 +1,25 @@
 from sqlalchemy.orm import Session
 from model import models
 
-def get_my_achievement_list(db: Session, current_user: models.Users):
-    """Retorna la lista de todos los logros del jugador, ordenada por fecha de adquisición."""
+def get_user_achievement_list(db: Session, user_id: int):
+    """Retorna la lista de todos los logros de un jugador, ordenada por fecha de adquisición."""
     return (
         db.query(models.ObtainedAchievements, models.Achievement)
         .join(
             models.Achievement,
             models.ObtainedAchievements.achievement_id == models.Achievement.achievement_id
         )
-        .filter(models.ObtainedAchievements.user_id == current_user.user_id)
+        .filter(models.ObtainedAchievements.user_id == user_id)
         .order_by(models.ObtainedAchievements.achievement_acquisition_date.desc())
         .all()
     )
 
-def get_locked_achievements(db: Session, current_user: models.Users):
-    """Retorna la lista de logros que el jugador aun no obtiene."""
+def get_locked_achievements(db: Session, user_id: int):
+    """Retorna la lista de logros que un jugador aun no obtiene."""
     obtained = (
         db.query(models.ObtainedAchievements.achievement_id)
         .filter(
-            models.ObtainedAchievements.user_id == current_user.user_id,
+            models.ObtainedAchievements.user_id == user_id,
             models.ObtainedAchievements.achievement_id == models.Achievement.achievement_id
         )
         .exists()
