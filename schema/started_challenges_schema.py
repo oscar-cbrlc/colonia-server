@@ -7,7 +7,7 @@ class StartedChallengeUpdate(BaseModel):
     is_complete: Optional[bool]
 
 class StartedChallengeResponse(BaseModel):
-    challenge: ActiveChallengeResponse
+    active_challenge: ActiveChallengeResponse
     progress: int
     is_complete: bool
     model_config = ConfigDict(from_attributes=True)

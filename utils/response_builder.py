@@ -363,7 +363,7 @@ def build_started_challenge_response(
             db_active_challenge = active_challenges_crud.get_active_challenge_by_id(db, active_challenge_id)
 
     return StartedChallengeResponse(
-        challenge = build_active_challenge_response(db, db_active_challenge),
+        active_challenge = build_active_challenge_response(db, db_active_challenge),
         progress = progress,
         is_complete = is_complete
     )
