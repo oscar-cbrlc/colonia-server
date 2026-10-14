@@ -45,6 +45,8 @@ class UserAvatarResponse(BaseModel):
     avatar_color: int
 
 class UserStatsResponse(BaseModel):
+    user_level: int = 0
+    user_xp: int = 0
     total_distance: float = 0.0
     total_time: float = 0.0
     total_attack: int = 0
@@ -74,6 +76,7 @@ class UserResponse(BaseModel):
     user_type: str
     coin_amount: int
     avatar: UserAvatarResponse
+    xp_for_next_level: int
     stats: UserStatsResponse
     team: Optional[UserTeamResponse]
     achievements: list[AchievementDetails]

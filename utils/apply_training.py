@@ -8,14 +8,18 @@ from schema.territory_schema import (
     TerritoryListUpdate,
     TerritoryImpactResult,
     TerritoryImpactResponse,
+    TrainingResult
 )
+from schema.challenge_schema import Challenge_metrics
 from crud.territory_crud import create_territory, get_locked_territory
 from routers.boosts import get_existing_boost
 from crud.boost_inventory_crud import remove_boost_from_inventory
 from decimal import Decimal, ROUND_HALF_UP
 from config import settings
 from utils.achievement_tracker import check_achievements
-from utils.response_builder import build_achievement_response
+from utils.response_builder import build_achievement_response, build_started_challenge_response
+from utils.challenge_tracker import check_challenges
+from utils.user_leveling_system import give_training_xp
 from enums.enum_types import Boost_Type
 
 def apply_points(territory: models.Territory, user_team: int, points: Decimal) -> str:
@@ -43,6 +47,21 @@ def apply_points(territory: models.Territory, user_team: int, points: Decimal) -
 def round_points(points: Decimal) -> Decimal:
     return points.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
+# To do: Add challenge metric for complete route
+def get_challenge_metrics(impact_progress: TerritoryListUpdate, territories_captured: int) -> Challenge_metrics:
+    """Obtiene datos de todas las métricas de progreso para los desafíos"""
+    return Challenge_metrics(
+        total_time = impact_progress.total_time,
+        walk_time = impact_progress.seconds_walk,
+        run_time = impact_progress.seconds_run,
+        bike_time = impact_progress.seconds_bike,
+        total_distance = impact_progress.total_distance,
+        walk_distance = impact_progress.meters_walk,
+        run_distance = impact_progress.meters_run,
+        bike_distance = impact_progress.meters_bike,
+        captured_territories = territories_captured
+    )
+
 def apply_training_impact(
         db: Session,
         current_user: models.Users,
@@ -50,7 +69,7 @@ def apply_training_impact(
     ) -> TerritoryImpactResponse:
     
     """Aplica un paquete de entrenamiento completo en una sola transaccion."""
-    results: list[TerritoryImpactResult] = []
+    territory_results: list[TerritoryImpactResult] = []
     total_attack_points = 0
     total_defence_points = 0
     territories_captured = 0
@@ -80,17 +99,6 @@ def apply_training_impact(
             )
             .with_for_update()
             .one()
-        )
-
-        # Actualiza estadísticas de distancia y tiempo
-        locked_user.total_distance = (
-            Decimal(locked_user.total_distance or 0)
-            + impact_in.total_distance
-        )
-
-        locked_user.total_time = (
-            int(locked_user.total_time or 0)
-            + impact_in.total_time
         )
 
         # Orden fijo para reducir posibilidad de deadlocks
@@ -140,7 +148,7 @@ def apply_training_impact(
                     team_color = team.team_color
                 )
 
-            results.append(
+            territory_results.append(
                 TerritoryImpactResult(
                     territory_id = territory.territory_id,
                     team = team_response,
@@ -149,7 +157,17 @@ def apply_training_impact(
                 )
             )
 
-        # Actualiza estadísticas de usuario relacionadas a puntaje
+        # Actualiza estadísticas del usuario
+        locked_user.total_distance = (
+            Decimal(locked_user.total_distance or 0)
+            + impact_in.total_distance
+        )
+
+        locked_user.total_time = (
+            int(locked_user.total_time or 0)
+            + impact_in.total_time
+        )
+
         locked_user.total_attack = (
             int(locked_user.total_attack or 0)
             + total_attack_points
@@ -165,6 +183,9 @@ def apply_training_impact(
         )
 
         unlocked_achievements = check_achievements(db, locked_user)
+        challenge_progress = get_challenge_metrics(impact_in, territories_captured)
+        progressed_challenges = check_challenges(db, current_user, challenge_progress)
+        training = give_training_xp(current_user, challenge_progress)
         db.commit()
         
         achievements_results = [
@@ -172,15 +193,25 @@ def apply_training_impact(
             for achievement in unlocked_achievements
         ]
 
+        challenges_results = [
+            build_started_challenge_response(db, db_started_challenge, None)
+            for db_started_challenge in progressed_challenges
+        ]
+
         return TerritoryImpactResponse(
             user = UserImpactResult(
                 user_id = locked_user.user_id,
                 user_name = locked_user.user_name,
                 total_distance = locked_user.total_distance,
-                total_time = locked_user.total_time
+                total_time = locked_user.total_time,
+                total_territories = locked_user.territories_captured,
+                total_attack = locked_user.total_attack,
+                total_defence = locked_user.total_defence
             ),
-            territories = results,
-            achievements = achievements_results
+            training = training,
+            territories = territory_results,
+            achievements = achievements_results,
+            challenges = challenges_results
         )
 
     except Exception:

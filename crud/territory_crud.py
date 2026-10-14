@@ -1,16 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from model import models
-from schema.territory_schema import (
-    TerritoryCreate,
-    TerritoryUpdate,
-    TerritoryOwnerResponse,
-    UserImpactResult,
-    TerritoryListUpdate,
-    TerritoryImpactResult,
-    TerritoryImpactResponse,
-)
-from decimal import Decimal, ROUND_HALF_UP
+from schema.territory_schema import TerritoryCreate, TerritoryUpdate
 from typing import Optional
 from config import settings
 

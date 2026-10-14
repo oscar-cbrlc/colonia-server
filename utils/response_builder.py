@@ -1,6 +1,16 @@
 from sqlalchemy.orm import Session
 from model import models
-from crud import user_crud, team_crud, obtained_achievements_crud
+from crud import (
+    user_crud, 
+    team_crud, 
+    obtained_achievements_crud, 
+    avatar_item_crud, 
+    boost_crud, 
+    reward_crud, 
+    challenge_crud, 
+    active_challenges_crud,
+    started_challenges_crud
+)
 from schema.user_schema import (
     UserResponse,
     UserBaseResponse,
@@ -8,13 +18,29 @@ from schema.user_schema import (
     UserStatsResponse,
     UserTeamResponse
 )
+from enums.enum_types import (
+    TeamRole, 
+    UserType, 
+    Message_Type, 
+    Boost_Type, 
+    Achievement_Type, 
+    Objective_Type, 
+    Difficulty_Type, 
+    AvatarItemType, 
+    Reward_Type
+)
 from schema.team_schema import TeamMember
 from schema.team_chat_schema import MessageUserResponse, MessageResponse
 from schema.boost_schema import BoostResponse
 from schema.boost_inventory_schema import BoostInventoryResponse
 from schema.achievement_schema import AchievementResponse
+from schema.challenge_schema import ChallengeResponse
+from schema.active_challenges_schema import ActiveChallengeResponse
 from schema.obtained_achievements_schema import AchievementDetails
-from enums.enum_types import TeamRole, UserType, Message_Type, Boost_Type, Achievement_Type
+from schema.avatar_item_schema import AvatarItemResponse
+from schema.reward_schema import RewardResponse
+from schema.started_challenges_schema import StartedChallengeResponse
+from utils.user_leveling_system import get_user_level
 from config import settings
 
 def search_item_data(db: Session, item_id: int):
@@ -61,8 +87,10 @@ def get_user_data(db: Session, db_user: models.Users):
         avatar_footwear = footwear_data,
         avatar_color = db_user.avatar_color
     )
-
+    user_level = get_user_level(db_user)
     stats = UserStatsResponse(
+        user_xp = db_user.user_exp,
+        user_level = user_level[0],
         total_distance = db_user.total_distance,
         total_time = db_user.total_time,
         total_attack = db_user.total_attack,
@@ -94,6 +122,7 @@ def get_user_data(db: Session, db_user: models.Users):
 def get_user_response(db: Session, db_user: models.Users):
     """Construye Response para usuario autentificado."""
     avatar, stats, team = get_user_data(db, db_user)
+    user_level = get_user_level(db_user)
     obtained_achievements = get_obtained_achievements_data(db, db_user.user_id)
     locked_achievements = get_locked_achievements_data(db, db_user.user_id)
     achievements = obtained_achievements + locked_achievements
@@ -105,6 +134,7 @@ def get_user_response(db: Session, db_user: models.Users):
         user_type = UserType(db_user.user_type).name,
         coin_amount = db_user.coin_amount,
         avatar = avatar,
+        xp_for_next_level = user_level[1],
         stats = stats,
         team = team,
         achievements = achievements
@@ -196,7 +226,7 @@ def build_boost_inventory_response(db_inventory: models.BoostInventory, db_boost
     )
 
 def build_achievement_response(db_achievement: models.Achievement):
-    """Contruye Response para logros de usuario"""
+    """Contruye Response para logros de usuario."""
 
     return AchievementResponse(
         achievement_id = db_achievement.achievement_id,
@@ -205,7 +235,7 @@ def build_achievement_response(db_achievement: models.Achievement):
         achievement_objective = db_achievement.achievement_objective
     )
 
-def get_achievement_details(db_obtained_achievement: models.ObtainedAchievements, db_achievement: models.Achievement, ):
+def get_achievement_details(db_obtained_achievement: models.ObtainedAchievements, db_achievement: models.Achievement):
     """Obtiene detalles de un logro"""
 
     adquisition_date = None
@@ -229,7 +259,6 @@ def get_obtained_achievements_data(db: Session, user_id: int):
         for obtained_achievement, achievement in obtained
     ]
 
-
 def get_locked_achievements_data(db: Session, user_id: int):
     """Obtiene los datos de los logros por desbloquear de un jugador"""
     locked = obtained_achievements_crud.get_locked_achievements(db, user_id)
@@ -237,4 +266,120 @@ def get_locked_achievements_data(db: Session, user_id: int):
     return [
         get_achievement_details(None, achievement)
         for achievement in locked
+    ]
+
+def build_avatar_item_response(db_item: models.AvatarItem):
+    """Construye el Response de un item de avatar"""
+    return AvatarItemResponse(
+        avatar_item_id = db_item.avatar_item_id,
+        item_name = db_item.item_name,
+        item_type = AvatarItemType(db_item).name,
+        item_image = db_item.item_image,
+        item_url = db_item.item_url
+    )
+
+def get_reward_object_data(db: Session, objects_id: list[int | None], reward_type: int):
+    """Obtiene los datos de un objeto de recompensa"""
+    boost_data = None
+    item_data = None
+    match(reward_type):
+        case Reward_Type.boost:
+            db_boost = boost_crud.get_boost_by_id(db, objects_id[0])
+            boost_data = build_boost_response(db_boost)
+
+        case Reward_Type.avatar_Item:
+            db_item = avatar_item_crud.get_item_by_id(db, objects_id[1])
+            item_data = build_avatar_item_response(db_item)
+
+        case Reward_Type.boost_and_item:
+            db_boost = boost_crud.get_boost_by_id(db, objects_id[0])
+            boost_data = build_boost_response(db_boost)
+
+            db_item = avatar_item_crud.get_item_by_id(db, objects_id[1])
+            item_data = build_avatar_item_response(db_item)
+
+    return boost_data, item_data
+
+def build_reward_response(db: Session, db_reward: models.Reward):
+    "Obtiene los datos de una recompensa"
+    boost_data, item_data = get_reward_object_data(
+        db, [db_reward.reward_boost, db_reward.reward_item], db_reward.reward_type
+    )
+
+    return RewardResponse(
+        reward_id = db_reward.reward_id,
+        reward_type = Reward_Type(db_reward.reward_type).name,
+        reward_amount = db_reward.reward_amount,
+        reward_item = item_data,
+        reward_boost = boost_data
+    )
+
+def build_challenge_response(db: Session, db_challenge: models.Challenge):
+    """Contruye Response para un desafío."""
+    db_reward = reward_crud.get_reward_by_id(db, db_challenge.challenge_reward)
+    reward_data = build_reward_response(db, db_reward) 
+    challenge_difficulty = db_challenge.challenge_difficulty
+
+    return ChallengeResponse(
+        challenge_id = db_challenge.challenge_id,
+        challenge_name = db_challenge.challenge_name,
+        challege_reward = reward_data,
+        objective_type = Objective_Type(db_challenge.objective_type).name,
+        objective_condition = db_challenge.objective_condition,
+        challenge_difficulty = Difficulty_Type(challenge_difficulty).name,
+        challenge_xp_reward = settings.challenge_exp_reward[challenge_difficulty - 1]
+    )
+
+def build_active_challenge_response(
+        db: Session, 
+        db_active_challenge: models.ActiveChallenges
+    ):
+    """Contruye Response para un desafío activo."""
+    challenge_id = db_active_challenge.challenge_id
+    db_challenge = challenge_crud.get_challenge_by_id(db, challenge_id)
+    
+    return ActiveChallengeResponse(
+        active_challenge_id = db_active_challenge.active_challenge_id,
+        challenge = build_challenge_response(db, db_challenge),
+        challenge_start_date = db_active_challenge.challenge_start_date,
+        challenge_end_date = db_active_challenge.challenge_end_date
+    )
+
+def build_started_challenge_response(
+        db: Session, 
+        db_started_challenge: models.StartedChallenges, 
+        db_active_challenge: models.ActiveChallenges
+    ):
+    """Contruye Response un desafío iniciado por el jugador"""
+    progress = 0
+    is_complete = False
+    
+    if db_started_challenge is not None:
+        progress = db_started_challenge.progress
+        is_complete = db_started_challenge.is_complete
+
+    if db_active_challenge is None:
+            active_challenge_id = db_started_challenge.active_challenge_id
+            db_active_challenge = active_challenges_crud.get_active_challenge_by_id(db, active_challenge_id)
+
+    return StartedChallengeResponse(
+        challenge = build_active_challenge_response(db, db_active_challenge),
+        progress = progress,
+        is_complete = is_complete
+    )
+
+def get_started_challenges_data(db: Session, current_user: models.Users):
+    """Obtiene los datos de los desafíos iniciadospor el jugador"""
+    started = started_challenges_crud.get_user_started_challenges(db, current_user)
+    return  [
+        build_started_challenge_response(db, started_challenges, active_challenges)
+        for started_challenges, active_challenges in started
+    ]
+
+def get_active_challenges_data(db: Session, current_user: models.Users):
+    """Obtiene los datos de los desafíos activos actualmente"""
+    active = started_challenges_crud.get_active_challenges(db, current_user)
+    return  [
+        build_started_challenge_response(db, None, active_challenges)
+        for active_challenges in active
     ]

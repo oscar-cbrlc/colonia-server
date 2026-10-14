@@ -1,5 +1,5 @@
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
 class BoostBase(BaseModel):
@@ -17,3 +17,5 @@ class BoostResponse(BaseModel):
     boost_id: int
     boost_effect: Decimal
     boost_type: str
+
+    model_config = ConfigDict(from_attributes=True)

@@ -23,13 +23,11 @@ def get_user_boost(db: Session, user_id: int, boost_id: int):
         .first()
     )
 
-def add_boost_to_inventory(db: Session, current_user: models.Users, boost_id: int):
+def add_boost_to_inventory(db: Session, current_user: models.Users, boost_id: int, boost_amount:int):
     """Agrega un potenciador por identificador al inventario del usuario autentificado."""
     db_inventory = get_user_boost(db, current_user.user_id, boost_id)
-    db_inventory.boost_amount += 1
-
-    db.commit()
-    db.refresh(db_inventory)
+    db_inventory.boost_amount += boost_amount
+    db.flush()
 
 def remove_boost_from_inventory(db: Session, current_user: models.Users, boost_id: int):
     """Remueve un potenciador por identificador del inventario del usuario autentificado."""

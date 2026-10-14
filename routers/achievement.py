@@ -22,7 +22,7 @@ def require_admin(current_user: models.Users = Depends(get_current_user),) -> mo
     return current_user
 
 def get_existing_achievement(achievement_id: int, db: Session) -> models.Boost:
-    db_achievement = achievement_crud.get_boost_by_id(db, achievement_id)
+    db_achievement = achievement_crud.get_achievement_by_id(db, achievement_id)
     if db_achievement is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -31,14 +31,14 @@ def get_existing_achievement(achievement_id: int, db: Session) -> models.Boost:
     return db_achievement
 
 @router.post("/", response_model = AchievementResponse, status_code=status.HTTP_201_CREATED)
-def create_achievement(achievement_in: AchievementCreate, _: models.Users = Depends(require_admin), db: Session = Depends(get_db),):
+def create_achievement(achievement_in: AchievementCreate, _: models.Users = Depends(require_admin), db: Session = Depends(get_db)):
     """Crea un nuevo logro. Requiere permisos de administrador"""
 
     db_achievement = achievement_crud.create_achievement(db, achievement_in)
     return build_achievement_response(db_achievement)
 
 @router.get("/", response_model = list[AchievementResponse])
-def list_achievements(db: Session = Depends(get_db),):
+def list_achievements(db: Session = Depends(get_db)):
     """Retorna la lista de logros disponibles."""
     results = achievement_crud.get_all_achievements(db)
     return[
@@ -57,7 +57,7 @@ def update_achievement(
         achievement_id: int,
         achievement_in: AchievementUpdate,
         _: models.Users = Depends(require_admin),
-        db: Session = Depends(get_db),
+        db: Session = Depends(get_db)
     ):
     """Actualiza un logro. Requiere permisos de administrador."""
     db_achievement = get_existing_achievement(achievement_id, db)
@@ -68,7 +68,7 @@ def update_achievement(
 def delete_achievement(
         achievement_id: int,
         _: models.Users = Depends(require_admin),
-        db: Session = Depends(get_db),
+        db: Session = Depends(get_db)
     ):
     """Elimina un logro. Requiere permisos de administrador."""
     db_achievement = get_existing_achievement(achievement_id, db)

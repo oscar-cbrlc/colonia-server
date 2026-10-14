@@ -12,9 +12,18 @@ class Settings(BaseSettings):
     access_token_expires_minutes: int = 30
     refresh_token_expires_days: int = 14
     environment: str = Field(alias="ENVIRONMENT", default="development")
+
     member_limit: int = 25
+
     base_territory_health: int = 1000
     max_territory_health: int = 5000
+
+    challenge_exp_reward: list[int] = [250, 500, 1000]
+    exp_level_base: int = 2500
+    distance_xp: int = 10
+    time_xp: int = 6
+    territories_xp: int = 500
+
     model_url: str
     model_config = SettingsConfigDict(env_file=".env", extra='ignore')
 

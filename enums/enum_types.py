@@ -24,10 +24,16 @@ class Notification_Type(IntEnum):
     warning = 6
 
 class Objective_Type(IntEnum):
-    complete_distance = 1
-    complete_time = 2
-    complete_speed = 3
-    complete_pace = 4
+    total_time = 1
+    walk_time = 2
+    run_time = 3
+    bike_time = 4
+    total_distance = 5
+    walk_distance = 6
+    run_distance = 7
+    bike_distance = 8
+    captured_territories = 9
+    route = 10
 
 class Achievement_Type(IntEnum):
     total_distance = 1
@@ -55,3 +61,13 @@ class Boost_Type(IntEnum):
     score = 1
     impact_area = 2
     impact_distance = 3
+
+class Difficulty_Type(IntEnum):
+    easy = 1
+    normal = 2
+    hard = 3
+
+class Activity_Type(IntEnum):
+    walk = 1
+    run = 2
+    bike = 3

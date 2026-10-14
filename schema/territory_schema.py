@@ -3,6 +3,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, Literal
 from schema.achievement_schema import AchievementResponse
+from schema.started_challenges_schema import StartedChallengeResponse
 from config import settings
 class TerritoryBase(BaseModel):
     territory_id: str
@@ -24,6 +25,12 @@ class TerritoryListUpdate(BaseModel):
     timestamp: datetime
     boost_id: Optional[int] = None
     territories: list[TerritoryBase]
+    seconds_walk: int
+    seconds_run: int
+    seconds_bike: int
+    meters_walk: Decimal
+    meters_run: Decimal
+    meters_bike: Decimal
     
 class TerritoryOwnerResponse(BaseModel):
     team_id: int
@@ -42,7 +49,16 @@ class UserImpactResult(BaseModel):
     user_name: str
     total_distance: Decimal
     total_time: int
+    total_territories: int
+    total_attack: int
+    total_defence: int
     model_config = ConfigDict(from_attributes=True)
+
+class TrainingResult(BaseModel):
+    time_xp: int
+    distance_xp: int
+    territories_xp: int
+    total_xp: int
 
 class TerritoryImpactResult(BaseModel):
     territory_id: str
@@ -52,5 +68,7 @@ class TerritoryImpactResult(BaseModel):
 
 class TerritoryImpactResponse(BaseModel):
     user: UserImpactResult
+    training: TrainingResult
     territories: list[TerritoryImpactResult]
     achievements: Optional[list[AchievementResponse]] = None
+    challenges: Optional[list[StartedChallengeResponse]] = None
