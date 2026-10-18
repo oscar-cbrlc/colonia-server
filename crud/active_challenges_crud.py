@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import delete
 from model import models
 from schema.active_challenges_schema import ActiveChallengeCreate, ActiveChallengeUpdate
+from datetime import datetime, timezone
 
 def get_all_active_challenges(db: Session):
     """Retorna todos los desafíos activos."""
@@ -10,6 +11,15 @@ def get_all_active_challenges(db: Session):
 def get_active_challenge_by_id(db: Session, active_challenge_id: int):
     """Busca un desafío activo por su ID único."""
     return db.query(models.ActiveChallenges).filter(models.ActiveChallenges.active_challenge_id == active_challenge_id).first()
+
+def get_expired_challenges(db: Session):
+    return (
+        db.query(models.ActiveChallenges)
+        .filter(
+            models.ActiveChallenges.challenge_end_date <= datetime.now(timezone.utc)
+        )
+        .all()
+    )
 
 def create_active_challenge(db: Session, active_challenge_in: ActiveChallengeCreate):
     """Crea un nuevo desafío activo en la base de datos"""
