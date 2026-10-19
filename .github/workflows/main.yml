@@ -2,7 +2,6 @@ name: Activate weekly challenges
 
 on:
   schedule:
-    # Cada lunes a las 06:00 UTC
     - cron: "0 0 * * 1"
       timezone: "America/Mexico_City"
 
