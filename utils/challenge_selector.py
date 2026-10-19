@@ -63,12 +63,13 @@ def delete_active_challenges(db: Session):
     for challenge in expired_challenges:
         db.delete(challenge)
 
+    return expired_challenges
+
 def select_weekly_challenges(db:Session):
     """Realiza el eliminado y selección de desafíos"""
 
-    
     try:
-        delete_active_challenges(db)
+        expired = delete_active_challenges(db)
         active_challenges = get_all_challenges(db)
         active_ids = {
             active_challenge.challenge_id
@@ -79,8 +80,14 @@ def select_weekly_challenges(db:Session):
         activate_challenges(db, new_challenges)
         db.commit()
 
+        print(
+            f"Desafíos expirados eliminados: {len(expired)}. "
+            f"Desafíos nuevos activados: {len(new_challenges)}."
+        )
+
     except Exception:
         db.rollback()
+        raise
 
 def main():
     db = SessionLocal()
