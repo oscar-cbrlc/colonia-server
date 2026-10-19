@@ -72,7 +72,7 @@ def is_challenge_progressed(
     match objective_type:
         case Objective_Type.total_time:
             progress = progress_data.total_time
-            objective = Decimal.objective['total_time']
+            objective = objective['total_time']
             
         case Objective_Type.walk_time:
             progress = progress_data.walk_time
@@ -104,7 +104,7 @@ def is_challenge_progressed(
             
         case Objective_Type.captured_territories:
             progress = progress_data.captured_territories
-            objective = objective['territories_captured'] 
+            objective = objective['captured_territories'] 
 
     if progress > 0:
         progress_challenge(db, current_user, db_challenge, db_active_challenge, db_started_challenge, progress, objective)
