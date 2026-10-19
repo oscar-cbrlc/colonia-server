@@ -4,6 +4,7 @@ on:
   schedule:
     # Cada lunes a las 06:00 UTC
     - cron: "0 6 * * 1"
+      timezone: "America/Mexico_City"
 
   workflow_dispatch:
 
@@ -16,18 +17,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set Timezone
-        uses: szenius/set-timezone@v2.0
-        with:
-          timezoneLinux: 'America/Mexico_City'
         
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: develop
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
