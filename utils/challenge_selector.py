@@ -70,7 +70,7 @@ def select_weekly_challenges(db:Session):
 
     try:
         expired = delete_active_challenges(db)
-        active_challenges = get_all_challenges(db)
+        active_challenges = get_all_active_challenges(db)
         active_ids = {
             active_challenge.challenge_id
             for active_challenge in active_challenges
