@@ -48,7 +48,7 @@ def get_challenges(
 def activate_challenges(db: Session, challenges: list[models.Challenge]):
     """Realiza la activación de una lista de desafíos"""
     now = datetime.now(timezone.utc)
-    end_date = now + timedelta(days=7)
+    end_date = now + timedelta(days=6, hours=23, minutes=59)
     for challenge in challenges:
         db_active_challenge = models.ActiveChallenges(
             challenge_id = challenge.challenge_id,
