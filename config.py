@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     time_xp: int = 6
     territories_xp: int = 500
 
-    model_url: str
+    model_url: str | None = None
     model_config = SettingsConfigDict(env_file=".env", extra='ignore')
 
 settings = Settings()
