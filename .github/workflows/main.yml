@@ -7,15 +7,26 @@ on:
 
   workflow_dispatch:
 
+concurrency:
+  group: weekly-challenges
+  cancel-in-progress: false
+
 jobs:
   activate-challenges:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Set Timezone
+        uses: szenius/set-timezone@v2.0
+        with:
+          timezoneLinux: 'America/Mexico_City'
+        
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: develop
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -27,9 +38,6 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           API_KEY: ${{ secrets.API_KEY }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-        run: python -m scripts.weekly_challenges
+        run: python -m utils.challenge_selector
 
-concurrency:
-  group: challenge_selector
-  cancel-in-progress: false
+
