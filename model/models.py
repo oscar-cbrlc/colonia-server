@@ -505,7 +505,7 @@ class ActiveChallenges(Base):
     challenge_end_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False)
 
     challenge: Mapped['Challenge'] = relationship('Challenge', back_populates='active_challenges')
-    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='active_challenge')
+    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='active_challenge', passive_deletes=True)
 
 
 class StartedChallenges(Base):
