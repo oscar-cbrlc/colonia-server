@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from model import models
 from config import settings
 from decimal import Decimal
+from datetime import datetime, timezone
 from schema.challenge_schema import Challenge_metrics
 from crud.challenge_crud import get_challenge_by_id
 from crud.started_challenges_crud import get_active_challenges, get_user_started_challenges, get_user_started_challenge_by_id, assign_active_challenge
@@ -45,8 +46,11 @@ def get_new_started_challenges(
     """Verifica si se realiza progreso en desafíos aun no iniciados por el usuario."""
     not_started = get_active_challenges(db, current_user)
     started = []
+    now = datetime.now(timezone.utc)
 
     for active_challenge in not_started:
+        if(active_challenge.challenge_start_date > now):
+            continue
         if is_challenge_progressed(db, current_user, active_challenge, None, progress):
             db_started_challenge = get_user_started_challenge_by_id(db, current_user, active_challenge)
             started.append(db_started_challenge)
