@@ -120,18 +120,6 @@ class OfferType(Base):
     store_catalog: Mapped[list['StoreCatalog']] = relationship('StoreCatalog', back_populates='offer_type_')
 
 
-class RewardType(Base):
-    __tablename__ = 'reward_type'
-    __table_args__ = (
-        PrimaryKeyConstraint('reward_type_id', name='reward_type_pkey'),
-    )
-
-    reward_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    reward_name: Mapped[str] = mapped_column(Text, nullable=False)
-
-    reward: Mapped[list['Reward']] = relationship('Reward', back_populates='reward_type_')
-
-
 class Team(Base):
     __tablename__ = 'team'
     __table_args__ = (
@@ -206,7 +194,7 @@ class AvatarItem(Base):
 
     avatar_item_type: Mapped['AvatarItemType'] = relationship('AvatarItemType', back_populates='avatar_item')
     bundle: Mapped[list['Bundle']] = relationship('Bundle', secondary='item_bundle', back_populates='avatar_item')
-    reward: Mapped[list['Reward']] = relationship('Reward', back_populates='avatar_item')
+    challenge: Mapped[list['Challenge']] = relationship('Challenge', back_populates='avatar_item')
     store_catalog: Mapped[list['StoreCatalog']] = relationship('StoreCatalog', back_populates='avatar_item')
     users_avatar_body: Mapped[list['Users']] = relationship('Users', foreign_keys='[Users.avatar_body]', back_populates='avatar_item')
     users_avatar_footwear: Mapped[list['Users']] = relationship('Users', foreign_keys='[Users.avatar_footwear]', back_populates='avatar_item_')
@@ -227,8 +215,8 @@ class Boost(Base):
     boost_type: Mapped[int] = mapped_column(Integer, nullable=False)
 
     boost_type_: Mapped['BoostType'] = relationship('BoostType', back_populates='boost')
-    reward: Mapped[list['Reward']] = relationship('Reward', back_populates='boost')
     boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='boost')
+    challenge_boosts: Mapped[list['ChallengeBoosts']] = relationship('ChallengeBoosts', back_populates='booster')
 
 
 class Territory(Base):
@@ -245,6 +233,29 @@ class Territory(Base):
     team: Mapped[Optional['Team']] = relationship('Team', back_populates='territory')
 
 
+class Challenge(Base):
+    __tablename__ = 'challenge'
+    __table_args__ = (
+        ForeignKeyConstraint(['avatar_item_id'], ['avatar_item.avatar_item_id'], ondelete='SET NULL', onupdate='CASCADE', name='avatar_item_fk'),
+        ForeignKeyConstraint(['challenge_difficulty'], ['challenge_difficulty.difficulty_id'], ondelete='SET DEFAULT', onupdate='CASCADE', name='challenge_difficulty_fk'),
+        ForeignKeyConstraint(['objective_type'], ['objective_type.objective_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='objective_type_fk'),
+        PrimaryKeyConstraint('challenge_id', name='challenge_pkey')
+    )
+
+    challenge_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    objective_type: Mapped[int] = mapped_column(Integer, nullable=False)
+    objective_condition: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    challenge_difficulty: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
+    challenge_name: Mapped[Optional[str]] = mapped_column(Text)
+    avatar_item_id: Mapped[Optional[int]] = mapped_column(Integer)
+
+    avatar_item: Mapped[Optional['AvatarItem']] = relationship('AvatarItem', back_populates='challenge')
+    challenge_difficulty_: Mapped['ChallengeDifficulty'] = relationship('ChallengeDifficulty', back_populates='challenge')
+    objective_type_: Mapped['ObjectiveType'] = relationship('ObjectiveType', back_populates='challenge')
+    active_challenges: Mapped[list['ActiveChallenges']] = relationship('ActiveChallenges', back_populates='challenge')
+    challenge_boosts: Mapped[list['ChallengeBoosts']] = relationship('ChallengeBoosts', back_populates='challenge')
+
+
 t_item_bundle = Table(
     'item_bundle', Base.metadata,
     Column('avatar_item_id', Integer, primary_key=True),
@@ -253,27 +264,6 @@ t_item_bundle = Table(
     ForeignKeyConstraint(['bundle_id'], ['bundle.bundle_id'], ondelete='CASCADE', onupdate='CASCADE', name='bundle_id_fk'),
     PrimaryKeyConstraint('avatar_item_id', 'bundle_id', name='item_bundle_pkey')
 )
-
-
-class Reward(Base):
-    __tablename__ = 'reward'
-    __table_args__ = (
-        ForeignKeyConstraint(['reward_boost'], ['boost.boost_id'], ondelete='CASCADE', onupdate='CASCADE', name='reward_boost_fk'),
-        ForeignKeyConstraint(['reward_item'], ['avatar_item.avatar_item_id'], ondelete='CASCADE', onupdate='CASCADE', name='reward_item_fk'),
-        ForeignKeyConstraint(['reward_type'], ['reward_type.reward_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='reward_type_fk'),
-        PrimaryKeyConstraint('reward_id', name='reward_pkey')
-    )
-
-    reward_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    reward_type: Mapped[int] = mapped_column(Integer, nullable=False)
-    reward_amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    reward_item: Mapped[Optional[int]] = mapped_column(Integer)
-    reward_boost: Mapped[Optional[int]] = mapped_column(Integer)
-
-    boost: Mapped[Optional['Boost']] = relationship('Boost', back_populates='reward')
-    avatar_item: Mapped[Optional['AvatarItem']] = relationship('AvatarItem', back_populates='reward')
-    reward_type_: Mapped['RewardType'] = relationship('RewardType', back_populates='reward')
-    challenge: Mapped[list['Challenge']] = relationship('Challenge', back_populates='reward')
 
 
 class StoreCatalog(Base):
@@ -340,14 +330,31 @@ class Users(Base):
     team_role_: Mapped[Optional['TeamRole']] = relationship('TeamRole', back_populates='users')
     team: Mapped[Optional['Team']] = relationship('Team', back_populates='users')
     user_type_: Mapped['UserType'] = relationship('UserType', back_populates='users')
-    avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='user', passive_deletes=True)
-    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='user', passive_deletes=True)
-    notification: Mapped[list['Notification']] = relationship('Notification', back_populates='user', passive_deletes=True)
-    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user', passive_deletes=True)
-    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user', passive_deletes=True)
-    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user', passive_deletes=True)
-    user_session: Mapped[list['UserSession']] = relationship('UserSession', back_populates='user', passive_deletes=True)
-    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='user', passive_deletes=True)
+    avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='user')
+    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='user')
+    notification: Mapped[list['Notification']] = relationship('Notification', back_populates='user')
+    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user')
+    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user')
+    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user')
+    user_session: Mapped[list['UserSession']] = relationship('UserSession', back_populates='user')
+    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='user')
+
+
+class ActiveChallenges(Base):
+    __tablename__ = 'active_challenges'
+    __table_args__ = (
+        ForeignKeyConstraint(['challenge_id'], ['challenge.challenge_id'], ondelete='CASCADE', onupdate='CASCADE', name='challenge_fk'),
+        PrimaryKeyConstraint('active_challenge_id', name='active_challenges_pkey')
+    )
+
+    active_challenge_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    challenge_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    challenge_start_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    challenge_end_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False)
+
+    challenge: Mapped['Challenge'] = relationship('Challenge', back_populates='active_challenges')
+    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='active_challenge')
+
 
 class AvatarInventory(Base):
     __tablename__ = 'avatar_inventory'
@@ -381,26 +388,20 @@ class BoostInventory(Base):
     user: Mapped['Users'] = relationship('Users', back_populates='boost_inventory')
 
 
-class Challenge(Base):
-    __tablename__ = 'challenge'
+class ChallengeBoosts(Base):
+    __tablename__ = 'challenge_boosts'
     __table_args__ = (
-        ForeignKeyConstraint(['challenge_difficulty'], ['challenge_difficulty.difficulty_id'], ondelete='SET DEFAULT', onupdate='CASCADE', name='challenge_difficulty_fk'),
-        ForeignKeyConstraint(['challenge_reward'], ['reward.reward_id'], ondelete='CASCADE', onupdate='CASCADE', name='challenge_reward_fk'),
-        ForeignKeyConstraint(['objective_type'], ['objective_type.objective_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='objective_type_fk'),
-        PrimaryKeyConstraint('challenge_id', name='challenge_pkey')
+        ForeignKeyConstraint(['booster_id'], ['boost.boost_id'], ondelete='CASCADE', onupdate='CASCADE', name='boost_fk'),
+        ForeignKeyConstraint(['challenge_id'], ['challenge.challenge_id'], ondelete='CASCADE', onupdate='CASCADE', name='challenge_fk'),
+        PrimaryKeyConstraint('challenge_id', 'booster_id', name='challenge_boosts_pkey')
     )
 
-    challenge_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    challenge_reward: Mapped[int] = mapped_column(Integer, nullable=False)
-    objective_type: Mapped[int] = mapped_column(Integer, nullable=False)
-    objective_condition: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    challenge_difficulty: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
-    challenge_name: Mapped[Optional[str]] = mapped_column(Text)
+    challenge_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    booster_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    amount: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
 
-    challenge_difficulty_: Mapped['ChallengeDifficulty'] = relationship('ChallengeDifficulty', back_populates='challenge')
-    reward: Mapped['Reward'] = relationship('Reward', back_populates='challenge')
-    objective_type_: Mapped['ObjectiveType'] = relationship('ObjectiveType', back_populates='challenge')
-    active_challenges: Mapped[list['ActiveChallenges']] = relationship('ActiveChallenges', back_populates='challenge')
+    booster: Mapped['Boost'] = relationship('Boost', back_populates='challenge_boosts')
+    challenge: Mapped['Challenge'] = relationship('Challenge', back_populates='challenge_boosts')
 
 
 class Notification(Base):
@@ -490,22 +491,6 @@ class UserSession(Base):
     revoked_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True))
 
     user: Mapped['Users'] = relationship('Users', back_populates='user_session')
-
-
-class ActiveChallenges(Base):
-    __tablename__ = 'active_challenges'
-    __table_args__ = (
-        ForeignKeyConstraint(['challenge_id'], ['challenge.challenge_id'], ondelete='CASCADE', onupdate='CASCADE', name='challenge_fk'),
-        PrimaryKeyConstraint('active_challenge_id', name='active_challenges_pkey')
-    )
-
-    active_challenge_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    challenge_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    challenge_start_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
-    challenge_end_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False)
-
-    challenge: Mapped['Challenge'] = relationship('Challenge', back_populates='active_challenges')
-    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='active_challenge', passive_deletes=True)
 
 
 class StartedChallenges(Base):
