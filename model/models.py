@@ -216,7 +216,7 @@ class Boost(Base):
 
     boost_type_: Mapped['BoostType'] = relationship('BoostType', back_populates='boost')
     boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='boost')
-    challenge_boosts: Mapped[list['ChallengeBoosts']] = relationship('ChallengeBoosts', back_populates='booster')
+    challenge_boosts: Mapped[list['ChallengeBoosts']] = relationship('ChallengeBoosts', back_populates='boost')
 
 
 class Territory(Base):
@@ -330,14 +330,14 @@ class Users(Base):
     team_role_: Mapped[Optional['TeamRole']] = relationship('TeamRole', back_populates='users')
     team: Mapped[Optional['Team']] = relationship('Team', back_populates='users')
     user_type_: Mapped['UserType'] = relationship('UserType', back_populates='users')
-    avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='user')
-    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='user')
-    notification: Mapped[list['Notification']] = relationship('Notification', back_populates='user')
-    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user')
-    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user')
-    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user')
-    user_session: Mapped[list['UserSession']] = relationship('UserSession', back_populates='user')
-    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='user')
+    avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='user', passive_deletes=True)
+    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='user', passive_deletes=True)
+    notification: Mapped[list['Notification']] = relationship('Notification', back_populates='user', passive_deletes=True)
+    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user', passive_deletes=True)
+    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user', passive_deletes=True)
+    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user', passive_deletes=True)
+    user_session: Mapped[list['UserSession']] = relationship('UserSession', back_populates='user', passive_deletes=True)
+    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='user', passive_deletes=True)
 
 
 class ActiveChallenges(Base):
@@ -353,7 +353,7 @@ class ActiveChallenges(Base):
     challenge_end_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False)
 
     challenge: Mapped['Challenge'] = relationship('Challenge', back_populates='active_challenges')
-    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='active_challenge')
+    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='active_challenge', passive_deletes=True)
 
 
 class AvatarInventory(Base):
@@ -391,16 +391,16 @@ class BoostInventory(Base):
 class ChallengeBoosts(Base):
     __tablename__ = 'challenge_boosts'
     __table_args__ = (
-        ForeignKeyConstraint(['booster_id'], ['boost.boost_id'], ondelete='CASCADE', onupdate='CASCADE', name='boost_fk'),
+        ForeignKeyConstraint(['boost_id'], ['boost.boost_id'], ondelete='CASCADE', onupdate='CASCADE', name='boost_fk'),
         ForeignKeyConstraint(['challenge_id'], ['challenge.challenge_id'], ondelete='CASCADE', onupdate='CASCADE', name='challenge_fk'),
-        PrimaryKeyConstraint('challenge_id', 'booster_id', name='challenge_boosts_pkey')
+        PrimaryKeyConstraint('challenge_id', 'boost_id', name='challenge_boosts_pkey')
     )
 
     challenge_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    booster_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    amount: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
+    boost_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    boost_amount: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
 
-    booster: Mapped['Boost'] = relationship('Boost', back_populates='challenge_boosts')
+    boost: Mapped['Boost'] = relationship('Boost', back_populates='challenge_boosts')
     challenge: Mapped['Challenge'] = relationship('Challenge', back_populates='challenge_boosts')
 
 

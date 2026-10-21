@@ -42,11 +42,6 @@ class Achievement_Type(IntEnum):
     total_attack = 4
     total_defense = 5
 
-class Reward_Type(IntEnum):
-    boost = 1
-    avatar_Item = 2
-    boost_and_item = 3
-
 class Offer_Type(IntEnum):
     item = 1
     bundle = 2

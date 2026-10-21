@@ -6,7 +6,7 @@ from crud import (
     obtained_achievements_crud, 
     avatar_item_crud, 
     boost_crud, 
-    reward_crud, 
+    boost_reward_crud, 
     challenge_crud, 
     active_challenges_crud,
     started_challenges_crud
@@ -27,7 +27,6 @@ from enums.enum_types import (
     Objective_Type, 
     Difficulty_Type, 
     AvatarItemType, 
-    Reward_Type
 )
 from schema.team_schema import TeamMember
 from schema.team_chat_schema import MessageUserResponse, MessageResponse
@@ -38,7 +37,7 @@ from schema.challenge_schema import ChallengeResponse
 from schema.active_challenges_schema import ActiveChallengeResponse
 from schema.obtained_achievements_schema import AchievementDetails
 from schema.avatar_item_schema import AvatarItemResponse
-from schema.reward_schema import RewardResponse
+from schema.boost_reward_schema import BoostRewardResponse
 from schema.started_challenges_schema import StartedChallengeResponse
 from utils.user_leveling_system import get_user_level
 from config import settings
@@ -273,61 +272,45 @@ def build_avatar_item_response(db_item: models.AvatarItem):
     return AvatarItemResponse(
         avatar_item_id = db_item.avatar_item_id,
         item_name = db_item.item_name,
-        item_type = AvatarItemType(db_item).name,
+        item_type = AvatarItemType(db_item.item_type).name,
         item_image = db_item.item_image,
         item_url = db_item.item_url
     )
 
-def get_reward_object_data(db: Session, objects_id: list[int | None], reward_type: int):
-    """Obtiene los datos de un objeto de recompensa"""
-    boost_data = None
-    item_data = None
-    match(reward_type):
-        case Reward_Type.boost:
-            db_boost = boost_crud.get_boost_by_id(db, objects_id[0])
-            boost_data = build_boost_response(db_boost)
+def build_boost_reward_response(db: Session, db_challenge: models.Challenge):
+    "Construye el Response para los potenciadores de recompensa de un desafio"
 
-        case Reward_Type.avatar_Item:
-            db_item = avatar_item_crud.get_item_by_id(db, objects_id[1])
-            item_data = build_avatar_item_response(db_item)
+    challenge_id = db_challenge.challenge_id
+    result = boost_reward_crud.get_boosts_by_challenge_id(db, challenge_id)
 
-        case Reward_Type.boost_and_item:
-            db_boost = boost_crud.get_boost_by_id(db, objects_id[0])
-            boost_data = build_boost_response(db_boost)
-
-            db_item = avatar_item_crud.get_item_by_id(db, objects_id[1])
-            item_data = build_avatar_item_response(db_item)
-
-    return boost_data, item_data
-
-def build_reward_response(db: Session, db_reward: models.Reward):
-    "Obtiene los datos de una recompensa"
-    boost_data, item_data = get_reward_object_data(
-        db, [db_reward.reward_boost, db_reward.reward_item], db_reward.reward_type
-    )
-
-    return RewardResponse(
-        reward_id = db_reward.reward_id,
-        reward_type = Reward_Type(db_reward.reward_type).name,
-        reward_amount = db_reward.reward_amount,
-        reward_item = item_data,
-        reward_boost = boost_data
-    )
+    return [
+        BoostRewardResponse(
+            boost = build_boost_response(boost),
+            boost_amount = boost_reward.boost_amount
+        )
+        for boost_reward, boost in result
+    ]
 
 def build_challenge_response(db: Session, db_challenge: models.Challenge):
     """Contruye Response para un desafío."""
-    db_reward = reward_crud.get_reward_by_id(db, db_challenge.challenge_reward)
-    reward_data = build_reward_response(db, db_reward) 
+    boost_reward = build_boost_reward_response(db, db_challenge)
+
+    item_reward = None
+    if db_challenge.avatar_item_id is not None:
+        db_avatar_item = avatar_item_crud.get_item_by_id(db, db_challenge.avatar_item_id)
+        item_reward = build_avatar_item_response(db_avatar_item)
+
     challenge_difficulty = db_challenge.challenge_difficulty
 
     return ChallengeResponse(
         challenge_id = db_challenge.challenge_id,
         challenge_name = db_challenge.challenge_name,
-        challege_reward = reward_data,
         objective_type = Objective_Type(db_challenge.objective_type).name,
         objective_condition = db_challenge.objective_condition,
         challenge_difficulty = Difficulty_Type(challenge_difficulty).name,
-        challenge_xp_reward = settings.challenge_exp_reward[challenge_difficulty - 1]
+        challenge_xp_reward = settings.challenge_exp_reward[challenge_difficulty - 1],
+        boost_reward = boost_reward,
+        item_reward = item_reward
     )
 
 def build_active_challenge_response(

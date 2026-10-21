@@ -127,12 +127,11 @@ def progress_challenge(
     ):
     """Asigna progreso a un desafío."""
     if db_started_challenge is None:
-        assign_active_challenge(db, current_user, db_active_challenge, progress)
-
+        db_started_challenge = assign_active_challenge(db, current_user, db_active_challenge, progress)
     else:
         db_started_challenge.progress += progress
 
-        if db_started_challenge.progress >= objective:
-            db_started_challenge.progress = objective
-            db_started_challenge.is_complete = True
-            give_challenge_reward(db, current_user, db_challenge)
+    if db_started_challenge.progress >= objective:
+        db_started_challenge.progress = objective
+        db_started_challenge.is_complete = True
+        give_challenge_reward(db, current_user, db_challenge)
