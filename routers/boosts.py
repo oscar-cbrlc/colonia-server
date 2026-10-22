@@ -1,0 +1,115 @@
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy.orm import Session
+from crud import boost_crud, user_crud, boost_inventory_crud
+from database import get_db
+from model import models
+from schema.boost_inventory_schema import BoostInventoryUpdate, BoostInventoryResponse
+from schema.boost_schema import BoostCreate, BoostResponse, BoostUpdate
+from utils.auth import get_current_user
+from utils.response_builder import build_boost_response, build_boost_inventory_response
+
+router = APIRouter(
+    prefix="/boosts",
+    tags=["Potenciadores"],
+)
+
+def require_admin(current_user: models.Users = Depends(get_current_user),) -> models.Users:
+    if not user_crud.is_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo administradores pueden realizar esta accion",
+        )
+    return current_user
+
+def get_existing_boost(boost_id: int, db: Session) -> models.Boost:
+    db_boost = boost_crud.get_boost_by_id(db, boost_id)
+    if db_boost is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Potenciador no encontrado",
+        )
+    return db_boost
+
+def get_boost_in_inventory(user_id: int, boost_id: int, db: Session) -> models.BoostInventory:
+    db_boost_inv = boost_inventory_crud.get_user_boost(db, user_id, boost_id)
+    return db_boost_inv
+
+@router.post("/", response_model=BoostResponse, status_code=status.HTTP_201_CREATED)
+def create_boost(
+        boost_in: BoostCreate,
+        _: models.Users = Depends(require_admin),
+        db: Session = Depends(get_db),
+    ):
+    """Crea un potenciador. Requiere permisos de administrador."""
+    db_boost = boost_crud.create_boost(db, boost_in)
+    return build_boost_response(db_boost)
+
+@router.get("/", response_model=list[BoostResponse])
+def list_boosts(db: Session = Depends(get_db),):
+    """Retorna el catalogo de potenciadores."""
+    results = boost_crud.get_all_boosts(db)
+    return[
+        build_boost_response(db_boost)
+        for db_boost in results
+    ]
+
+@router.get("/{boost_id}", response_model=BoostResponse)
+def get_boost(boost_id: int, db: Session = Depends(get_db)):
+    """Retorna un potenciador por su identificador."""
+    db_boost = get_existing_boost(boost_id, db)
+    return build_boost_response(db_boost)
+
+@router.patch("/{boost_id}", response_model=BoostResponse)
+def update_boost(
+        boost_id: int,
+        boost_in: BoostUpdate,
+        _: models.Users = Depends(require_admin),
+        db: Session = Depends(get_db),
+    ):
+    """Actualiza un potenciador. Requiere permisos de administrador."""
+    db_boost = get_existing_boost(boost_id, db)
+    result = boost_crud.update_boost(db, db_boost, boost_in)
+    return build_boost_response(result)
+
+
+@router.delete("/{boost_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_boost(
+        boost_id: int,
+        _: models.Users = Depends(require_admin),
+        db: Session = Depends(get_db),
+    ):
+    """Elimina un potenciador. Requiere permisos de administrador."""
+    db_boost = get_existing_boost(boost_id, db)
+    boost_crud.delete_boost(db, db_boost.boost_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.get("/users/me/inventory", response_model=list[BoostInventoryResponse])
+def get_my_inventory(
+        current_user: models.Users = Depends(get_current_user),
+        db: Session = Depends(get_db)
+    ):
+    """Retorna el inventario de potenciadores del usuario autentificado."""
+    results = boost_inventory_crud.get_boost_inventory(db, current_user.user_id)
+
+    return [
+        build_boost_inventory_response(inventory, boost)
+        for inventory, boost in results
+    ]
+
+@router.patch("/users/{user_id}/boosts/{boost_id}", response_model=list[BoostInventoryResponse])
+def update_user_boost_inventory(
+        user_id: int,
+        boost_id: int,
+        boost_in: BoostInventoryUpdate,
+        _: models.Users = Depends(require_admin),
+        db: Session = Depends(get_db),
+    ):
+    """Actualiza la cantidad de potenciador en inventario de un jugador. Requiere permisos de administrador."""
+    db_boost_inv = get_boost_in_inventory(user_id, boost_id, db)
+    boost_inventory_crud.update_user_boost_inventory(db, db_boost_inv, boost_in)
+
+    results = boost_inventory_crud.get_boost_inventory(db, user_id)
+    return [
+        build_boost_inventory_response(inventory, boost)
+        for inventory, boost in results
+    ]

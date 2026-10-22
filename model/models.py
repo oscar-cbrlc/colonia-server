@@ -1,0 +1,510 @@
+from typing import Optional
+import datetime
+import decimal
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKeyConstraint, Identity, Index, Integer, Numeric, PrimaryKeyConstraint, Table, Text, UniqueConstraint, text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+class Base(DeclarativeBase):
+    pass
+
+
+class AchievementType(Base):
+    __tablename__ = 'achievement_type'
+    __table_args__ = (
+        PrimaryKeyConstraint('achievement_type_id', name='achievement_type_pkey'),
+    )
+
+    achievement_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    achievement_type_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    achievement: Mapped[list['Achievement']] = relationship('Achievement', back_populates='achievement_type_')
+
+
+class AvatarItemType(Base):
+    __tablename__ = 'avatar_item_type'
+    __table_args__ = (
+        PrimaryKeyConstraint('avatar_item_type_id', name='avatar_item_type_pkey'),
+    )
+
+    avatar_item_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    avatar_item_type_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    avatar_item: Mapped[list['AvatarItem']] = relationship('AvatarItem', back_populates='avatar_item_type')
+
+
+class BoostType(Base):
+    __tablename__ = 'boost_type'
+    __table_args__ = (
+        PrimaryKeyConstraint('boost_type_id', name='boost_type_pkey'),
+    )
+
+    boost_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    boost_type_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    boost: Mapped[list['Boost']] = relationship('Boost', back_populates='boost_type_')
+
+
+class Bundle(Base):
+    __tablename__ = 'bundle'
+    __table_args__ = (
+        PrimaryKeyConstraint('bundle_id', name='bundle_pkey'),
+    )
+
+    bundle_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    bundle_name: Mapped[str] = mapped_column(Text, nullable=False)
+    bundle_image: Mapped[str] = mapped_column(Text, nullable=False)
+
+    avatar_item: Mapped[list['AvatarItem']] = relationship('AvatarItem', secondary='item_bundle', back_populates='bundle')
+    store_catalog: Mapped[list['StoreCatalog']] = relationship('StoreCatalog', back_populates='bundle')
+
+
+class ChallengeDifficulty(Base):
+    __tablename__ = 'challenge_difficulty'
+    __table_args__ = (
+        PrimaryKeyConstraint('difficulty_id', name='challenge_difficulty_pkey'),
+    )
+
+    difficulty_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    difficulty_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    challenge: Mapped[list['Challenge']] = relationship('Challenge', back_populates='challenge_difficulty_')
+
+
+class ChatMessageType(Base):
+    __tablename__ = 'chat_message_type'
+    __table_args__ = (
+        PrimaryKeyConstraint('message_type_id', name='chat_message_type_pkey'),
+    )
+
+    message_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    message_type_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='chat_message_type')
+
+
+class NotificationType(Base):
+    __tablename__ = 'notification_type'
+    __table_args__ = (
+        PrimaryKeyConstraint('notification_type_id', name='notification_type_pkey'),
+    )
+
+    notification_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    notification_type_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    notification: Mapped[list['Notification']] = relationship('Notification', back_populates='notification_type_')
+
+
+class ObjectiveType(Base):
+    __tablename__ = 'objective_type'
+    __table_args__ = (
+        PrimaryKeyConstraint('objective_type_id', name='objective_type_pkey'),
+    )
+
+    objective_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    objective_type_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    challenge: Mapped[list['Challenge']] = relationship('Challenge', back_populates='objective_type_')
+
+
+class OfferType(Base):
+    __tablename__ = 'offer_type'
+    __table_args__ = (
+        PrimaryKeyConstraint('offer_type_id', name='offer_type_pkey'),
+    )
+
+    offer_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    offer_type_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    store_catalog: Mapped[list['StoreCatalog']] = relationship('StoreCatalog', back_populates='offer_type_')
+
+
+class Team(Base):
+    __tablename__ = 'team'
+    __table_args__ = (
+        PrimaryKeyConstraint('team_id', name='team_pkey'),
+        UniqueConstraint('team_name', name='team_name_unique')
+    )
+
+    team_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    team_name: Mapped[str] = mapped_column(Text, nullable=False)
+    team_color: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'))
+    team_description: Mapped[Optional[str]] = mapped_column(Text)
+
+    territory: Mapped[list['Territory']] = relationship('Territory', back_populates='team')
+    users: Mapped[list['Users']] = relationship('Users', back_populates='team')
+    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='team')
+    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='team')
+
+
+class TeamRole(Base):
+    __tablename__ = 'team_role'
+    __table_args__ = (
+        PrimaryKeyConstraint('team_role_id', name='team_role_pkey'),
+    )
+
+    team_role_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    role_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    users: Mapped[list['Users']] = relationship('Users', back_populates='team_role_')
+
+
+class UserType(Base):
+    __tablename__ = 'user_type'
+    __table_args__ = (
+        PrimaryKeyConstraint('user_type_id', name='user_type_pkey'),
+    )
+
+    user_type_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    user_type_name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    users: Mapped[list['Users']] = relationship('Users', back_populates='user_type_')
+
+
+class Achievement(Base):
+    __tablename__ = 'achievement'
+    __table_args__ = (
+        ForeignKeyConstraint(['achievement_type'], ['achievement_type.achievement_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='achievement_type_fk'),
+        PrimaryKeyConstraint('achievement_id', name='achievement_pkey')
+    )
+
+    achievement_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    achievement_name: Mapped[str] = mapped_column(Text, nullable=False)
+    achievement_type: Mapped[int] = mapped_column(Integer, nullable=False)
+    achievement_objective: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    achievement_type_: Mapped['AchievementType'] = relationship('AchievementType', back_populates='achievement')
+    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='achievement')
+
+
+class AvatarItem(Base):
+    __tablename__ = 'avatar_item'
+    __table_args__ = (
+        ForeignKeyConstraint(['item_type'], ['avatar_item_type.avatar_item_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='item_type_fk'),
+        PrimaryKeyConstraint('avatar_item_id', name='avatar_item_pkey')
+    )
+
+    avatar_item_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    item_name: Mapped[str] = mapped_column(Text, nullable=False)
+    item_type: Mapped[int] = mapped_column(Integer, nullable=False)
+    item_image: Mapped[str] = mapped_column(Text, nullable=False)
+    item_url: Mapped[str] = mapped_column(Text, nullable=False)
+
+    avatar_item_type: Mapped['AvatarItemType'] = relationship('AvatarItemType', back_populates='avatar_item')
+    bundle: Mapped[list['Bundle']] = relationship('Bundle', secondary='item_bundle', back_populates='avatar_item')
+    challenge: Mapped[list['Challenge']] = relationship('Challenge', back_populates='avatar_item')
+    store_catalog: Mapped[list['StoreCatalog']] = relationship('StoreCatalog', back_populates='avatar_item')
+    users_avatar_body: Mapped[list['Users']] = relationship('Users', foreign_keys='[Users.avatar_body]', back_populates='avatar_item')
+    users_avatar_footwear: Mapped[list['Users']] = relationship('Users', foreign_keys='[Users.avatar_footwear]', back_populates='avatar_item_')
+    users_avatar_head: Mapped[list['Users']] = relationship('Users', foreign_keys='[Users.avatar_head]', back_populates='avatar_item1')
+    users_avatar_neck: Mapped[list['Users']] = relationship('Users', foreign_keys='[Users.avatar_neck]', back_populates='avatar_item2')
+    avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='avatar_item')
+
+
+class Boost(Base):
+    __tablename__ = 'boost'
+    __table_args__ = (
+        ForeignKeyConstraint(['boost_type'], ['boost_type.boost_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='boost_type_fk'),
+        PrimaryKeyConstraint('boost_id', name='boost_pkey')
+    )
+
+    boost_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    boost_effect: Mapped[decimal.Decimal] = mapped_column(Numeric, nullable=False)
+    boost_type: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    boost_type_: Mapped['BoostType'] = relationship('BoostType', back_populates='boost')
+    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='boost')
+    challenge_boosts: Mapped[list['ChallengeBoosts']] = relationship('ChallengeBoosts', back_populates='boost')
+
+
+class Territory(Base):
+    __tablename__ = 'territory'
+    __table_args__ = (
+        ForeignKeyConstraint(['team_id'], ['team.team_id'], ondelete='SET NULL', onupdate='CASCADE', name='team_territory_fk'),
+        PrimaryKeyConstraint('territory_id', name='territory_pkey')
+    )
+
+    territory_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    health_points: Mapped[decimal.Decimal] = mapped_column(Numeric, nullable=False)
+    team_id: Mapped[Optional[int]] = mapped_column(Integer)
+
+    team: Mapped[Optional['Team']] = relationship('Team', back_populates='territory')
+
+
+class Challenge(Base):
+    __tablename__ = 'challenge'
+    __table_args__ = (
+        ForeignKeyConstraint(['avatar_item_id'], ['avatar_item.avatar_item_id'], ondelete='SET NULL', onupdate='CASCADE', name='avatar_item_fk'),
+        ForeignKeyConstraint(['challenge_difficulty'], ['challenge_difficulty.difficulty_id'], ondelete='SET DEFAULT', onupdate='CASCADE', name='challenge_difficulty_fk'),
+        ForeignKeyConstraint(['objective_type'], ['objective_type.objective_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='objective_type_fk'),
+        PrimaryKeyConstraint('challenge_id', name='challenge_pkey')
+    )
+
+    challenge_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    objective_type: Mapped[int] = mapped_column(Integer, nullable=False)
+    objective_condition: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    challenge_difficulty: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
+    challenge_name: Mapped[Optional[str]] = mapped_column(Text)
+    avatar_item_id: Mapped[Optional[int]] = mapped_column(Integer)
+
+    avatar_item: Mapped[Optional['AvatarItem']] = relationship('AvatarItem', back_populates='challenge')
+    challenge_difficulty_: Mapped['ChallengeDifficulty'] = relationship('ChallengeDifficulty', back_populates='challenge')
+    objective_type_: Mapped['ObjectiveType'] = relationship('ObjectiveType', back_populates='challenge')
+    active_challenges: Mapped[list['ActiveChallenges']] = relationship('ActiveChallenges', back_populates='challenge')
+    challenge_boosts: Mapped[list['ChallengeBoosts']] = relationship('ChallengeBoosts', back_populates='challenge')
+
+
+t_item_bundle = Table(
+    'item_bundle', Base.metadata,
+    Column('avatar_item_id', Integer, primary_key=True),
+    Column('bundle_id', Integer, primary_key=True),
+    ForeignKeyConstraint(['avatar_item_id'], ['avatar_item.avatar_item_id'], ondelete='CASCADE', onupdate='CASCADE', name='item_bundle_fk'),
+    ForeignKeyConstraint(['bundle_id'], ['bundle.bundle_id'], ondelete='CASCADE', onupdate='CASCADE', name='bundle_id_fk'),
+    PrimaryKeyConstraint('avatar_item_id', 'bundle_id', name='item_bundle_pkey')
+)
+
+
+class StoreCatalog(Base):
+    __tablename__ = 'store_catalog'
+    __table_args__ = (
+        ForeignKeyConstraint(['avatar_item_id'], ['avatar_item.avatar_item_id'], ondelete='CASCADE', onupdate='CASCADE', name='offer_item_fk'),
+        ForeignKeyConstraint(['bundle_id'], ['bundle.bundle_id'], ondelete='CASCADE', onupdate='CASCADE', name='offer_bundle_fk'),
+        ForeignKeyConstraint(['offer_type'], ['offer_type.offer_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='offer_type_fk'),
+        PrimaryKeyConstraint('offer_id', name='store_catalog_pkey')
+    )
+
+    offer_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    offer_name: Mapped[str] = mapped_column(Text, nullable=False)
+    offer_type: Mapped[int] = mapped_column(Integer, nullable=False)
+    offer_image: Mapped[str] = mapped_column(Text, nullable=False)
+    offer_price: Mapped[int] = mapped_column(Integer, nullable=False)
+    avatar_item_id: Mapped[Optional[int]] = mapped_column(Integer)
+    bundle_id: Mapped[Optional[int]] = mapped_column(Integer)
+
+    avatar_item: Mapped[Optional['AvatarItem']] = relationship('AvatarItem', back_populates='store_catalog')
+    bundle: Mapped[Optional['Bundle']] = relationship('Bundle', back_populates='store_catalog')
+    offer_type_: Mapped['OfferType'] = relationship('OfferType', back_populates='store_catalog')
+
+
+class Users(Base):
+    __tablename__ = 'users'
+    __table_args__ = (
+        ForeignKeyConstraint(['avatar_body'], ['avatar_item.avatar_item_id'], ondelete='SET NULL', onupdate='CASCADE', name='user_avatar_body_fk'),
+        ForeignKeyConstraint(['avatar_footwear'], ['avatar_item.avatar_item_id'], ondelete='SET NULL', onupdate='CASCADE', name='user_avatar_footwear_fk'),
+        ForeignKeyConstraint(['avatar_head'], ['avatar_item.avatar_item_id'], ondelete='SET NULL', onupdate='CASCADE', name='user_avatar_head_fk'),
+        ForeignKeyConstraint(['avatar_neck'], ['avatar_item.avatar_item_id'], ondelete='SET NULL', onupdate='CASCADE', name='user_avatar_neck_fk'),
+        ForeignKeyConstraint(['team_role'], ['team_role.team_role_id'], ondelete='SET NULL', onupdate='CASCADE', name='user_team_role_fk'),
+        ForeignKeyConstraint(['user_team'], ['team.team_id'], ondelete='SET NULL', onupdate='CASCADE', name='user_team_fk'),
+        ForeignKeyConstraint(['user_type'], ['user_type.user_type_id'], ondelete='SET DEFAULT', onupdate='CASCADE', name='user_type_fk'),
+        PrimaryKeyConstraint('user_id', name='users_pkey'),
+        UniqueConstraint('email', name='users_email_key')
+    )
+
+    user_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    user_name: Mapped[str] = mapped_column(Text, nullable=False)
+    email: Mapped[str] = mapped_column(Text, nullable=False)
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    total_distance: Mapped[decimal.Decimal] = mapped_column(Numeric, nullable=False, server_default=text('0'))
+    total_time: Mapped[decimal.Decimal] = mapped_column(Numeric, nullable=False, server_default=text('0'))
+    user_type: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
+    avatar_color: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('13398016'))
+    coin_amount: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    total_attack: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    total_defence: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    territories_captured: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    user_exp: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    user_team: Mapped[Optional[int]] = mapped_column(Integer)
+    team_role: Mapped[Optional[int]] = mapped_column(Integer)
+    avatar_head: Mapped[Optional[int]] = mapped_column(Integer)
+    avatar_neck: Mapped[Optional[int]] = mapped_column(Integer)
+    avatar_body: Mapped[Optional[int]] = mapped_column(Integer)
+    avatar_footwear: Mapped[Optional[int]] = mapped_column(Integer)
+    user_thumbnail: Mapped[Optional[str]] = mapped_column(Text)
+
+    avatar_item: Mapped[Optional['AvatarItem']] = relationship('AvatarItem', foreign_keys=[avatar_body], back_populates='users_avatar_body')
+    avatar_item_: Mapped[Optional['AvatarItem']] = relationship('AvatarItem', foreign_keys=[avatar_footwear], back_populates='users_avatar_footwear')
+    avatar_item1: Mapped[Optional['AvatarItem']] = relationship('AvatarItem', foreign_keys=[avatar_head], back_populates='users_avatar_head')
+    avatar_item2: Mapped[Optional['AvatarItem']] = relationship('AvatarItem', foreign_keys=[avatar_neck], back_populates='users_avatar_neck')
+    team_role_: Mapped[Optional['TeamRole']] = relationship('TeamRole', back_populates='users')
+    team: Mapped[Optional['Team']] = relationship('Team', back_populates='users')
+    user_type_: Mapped['UserType'] = relationship('UserType', back_populates='users')
+    avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='user', passive_deletes=True)
+    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='user', passive_deletes=True)
+    notification: Mapped[list['Notification']] = relationship('Notification', back_populates='user', passive_deletes=True)
+    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user', passive_deletes=True)
+    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user', passive_deletes=True)
+    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user', passive_deletes=True)
+    user_session: Mapped[list['UserSession']] = relationship('UserSession', back_populates='user', passive_deletes=True)
+    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='user', passive_deletes=True)
+
+
+class ActiveChallenges(Base):
+    __tablename__ = 'active_challenges'
+    __table_args__ = (
+        ForeignKeyConstraint(['challenge_id'], ['challenge.challenge_id'], ondelete='CASCADE', onupdate='CASCADE', name='challenge_fk'),
+        PrimaryKeyConstraint('active_challenge_id', name='active_challenges_pkey')
+    )
+
+    active_challenge_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    challenge_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    challenge_start_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    challenge_end_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False)
+
+    challenge: Mapped['Challenge'] = relationship('Challenge', back_populates='active_challenges')
+    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='active_challenge', passive_deletes=True)
+
+
+class AvatarInventory(Base):
+    __tablename__ = 'avatar_inventory'
+    __table_args__ = (
+        ForeignKeyConstraint(['avatar_item_id'], ['avatar_item.avatar_item_id'], ondelete='CASCADE', onupdate='CASCADE', name='item_inventory_fk'),
+        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='user_item_inventory_fk'),
+        PrimaryKeyConstraint('avatar_item_id', 'user_id', name='avatar_inventory_pkey')
+    )
+
+    avatar_item_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    item_acquisition_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+
+    avatar_item: Mapped['AvatarItem'] = relationship('AvatarItem', back_populates='avatar_inventory')
+    user: Mapped['Users'] = relationship('Users', back_populates='avatar_inventory')
+
+
+class BoostInventory(Base):
+    __tablename__ = 'boost_inventory'
+    __table_args__ = (
+        ForeignKeyConstraint(['boost_id'], ['boost.boost_id'], ondelete='CASCADE', onupdate='CASCADE', name='boost_inventory_fk'),
+        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='user_boost_inventory_fk'),
+        PrimaryKeyConstraint('boost_id', 'user_id', name='boost_inventory_pkey')
+    )
+
+    boost_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    boost_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    boost: Mapped['Boost'] = relationship('Boost', back_populates='boost_inventory')
+    user: Mapped['Users'] = relationship('Users', back_populates='boost_inventory')
+
+
+class ChallengeBoosts(Base):
+    __tablename__ = 'challenge_boosts'
+    __table_args__ = (
+        ForeignKeyConstraint(['boost_id'], ['boost.boost_id'], ondelete='CASCADE', onupdate='CASCADE', name='boost_fk'),
+        ForeignKeyConstraint(['challenge_id'], ['challenge.challenge_id'], ondelete='CASCADE', onupdate='CASCADE', name='challenge_fk'),
+        PrimaryKeyConstraint('challenge_id', 'boost_id', name='challenge_boosts_pkey')
+    )
+
+    challenge_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    boost_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    boost_amount: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
+
+    boost: Mapped['Boost'] = relationship('Boost', back_populates='challenge_boosts')
+    challenge: Mapped['Challenge'] = relationship('Challenge', back_populates='challenge_boosts')
+
+
+class Notification(Base):
+    __tablename__ = 'notification'
+    __table_args__ = (
+        ForeignKeyConstraint(['notification_type'], ['notification_type.notification_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='notification_type_fk'),
+        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='user_notification_fk'),
+        PrimaryKeyConstraint('notification_id', name='notification_pkey')
+    )
+
+    notification_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    notification_type: Mapped[int] = mapped_column(Integer, nullable=False)
+    notification_message: Mapped[str] = mapped_column(Text, nullable=False)
+    notification_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+
+    notification_type_: Mapped['NotificationType'] = relationship('NotificationType', back_populates='notification')
+    user: Mapped['Users'] = relationship('Users', back_populates='notification')
+
+
+class ObtainedAchievements(Base):
+    __tablename__ = 'obtained_achievements'
+    __table_args__ = (
+        ForeignKeyConstraint(['achievement_id'], ['achievement.achievement_id'], ondelete='CASCADE', onupdate='CASCADE', name='achievement_obtained_fk'),
+        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='user_achievement_fk'),
+        PrimaryKeyConstraint('achievement_id', 'user_id', name='obtained_achievements_pkey')
+    )
+
+    achievement_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    achievement_acquisition_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+
+    achievement: Mapped['Achievement'] = relationship('Achievement', back_populates='obtained_achievements')
+    user: Mapped['Users'] = relationship('Users', back_populates='obtained_achievements')
+
+
+class TeamChat(Base):
+    __tablename__ = 'team_chat'
+    __table_args__ = (
+        ForeignKeyConstraint(['message_type'], ['chat_message_type.message_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='message_type_fk'),
+        ForeignKeyConstraint(['team_id'], ['team.team_id'], ondelete='CASCADE', onupdate='CASCADE', name='team_chat_fk'),
+        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='user_team_chat_fk'),
+        PrimaryKeyConstraint('message_id', name='team_chat_pkey')
+    )
+
+    message_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    team_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    chat_message: Mapped[str] = mapped_column(Text, nullable=False)
+    message_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    message_type: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
+    user_id: Mapped[Optional[int]] = mapped_column(Integer)
+
+    chat_message_type: Mapped['ChatMessageType'] = relationship('ChatMessageType', back_populates='team_chat')
+    team: Mapped['Team'] = relationship('Team', back_populates='team_chat')
+    user: Mapped[Optional['Users']] = relationship('Users', back_populates='team_chat')
+
+
+class TeamRequest(Base):
+    __tablename__ = 'team_request'
+    __table_args__ = (
+        ForeignKeyConstraint(['team_id'], ['team.team_id'], ondelete='CASCADE', name='team_request_team_fk'),
+        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', name='team_request_user_fk'),
+        PrimaryKeyConstraint('user_id', 'team_id', name='team_request_id')
+    )
+
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    team_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    request_timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+
+    team: Mapped['Team'] = relationship('Team', back_populates='team_request')
+    user: Mapped['Users'] = relationship('Users', back_populates='team_request')
+
+
+class UserSession(Base):
+    __tablename__ = 'user_session'
+    __table_args__ = (
+        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='user_id_fk'),
+        PrimaryKeyConstraint('session_id', name='user_session_pkey'),
+        Index('idx_session_jti', 'jti')
+    )
+
+    session_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    jti: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False)
+    revoked_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True))
+
+    user: Mapped['Users'] = relationship('Users', back_populates='user_session')
+
+
+class StartedChallenges(Base):
+    __tablename__ = 'started_challenges'
+    __table_args__ = (
+        ForeignKeyConstraint(['active_challenge_id'], ['active_challenges.active_challenge_id'], ondelete='CASCADE', onupdate='CASCADE', name='active_challenge_fk'),
+        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='user_challenge_fk'),
+        PrimaryKeyConstraint('active_challenge_id', 'user_id', name='started_challenges_pkey')
+    )
+
+    active_challenge_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    progress: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_complete: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
+
+    active_challenge: Mapped['ActiveChallenges'] = relationship('ActiveChallenges', back_populates='started_challenges')
+    user: Mapped['Users'] = relationship('Users', back_populates='started_challenges')

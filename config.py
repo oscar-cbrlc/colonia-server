@@ -1,0 +1,30 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
+
+class Settings(BaseSettings):
+    database_url: str = Field(
+        alias="DATABASE_URL",
+        #TODO(local db): connect local db
+        default="postgresql://postgres:@localhost/colonia_local_db"
+    )
+    api_key: str = Field(alias="API_KEY")
+    jwt_secret: str | None = Field(alias="JWT_SECRET", default=None)
+    access_token_expires_minutes: int = 30
+    refresh_token_expires_days: int = 14
+    environment: str = Field(alias="ENVIRONMENT", default="development")
+
+    member_limit: int = 25
+
+    base_territory_health: int = 1000
+    max_territory_health: int = 5000
+
+    challenge_exp_reward: list[int] = [250, 500, 1000]
+    exp_level_base: int = 2500
+    distance_xp: int = 10
+    time_xp: int = 6
+    territories_xp: int = 500
+
+    model_url: str | None = None
+    model_config = SettingsConfigDict(env_file=".env", extra='ignore')
+
+settings = Settings()

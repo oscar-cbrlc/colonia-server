@@ -1,0 +1,103 @@
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from model import models
+from schema.territory_schema import TerritoryCreate, TerritoryUpdate
+from typing import Optional
+from config import settings
+
+def get_territory_model_by_id(db: Session, territory_id: str):
+    """Retorna únicamente el modelo del territorio."""
+    return (
+        db.query(models.Territory)
+        .filter(
+            models.Territory.territory_id == territory_id
+        )
+        .first()
+    )
+
+def get_territory_by_id(db: Session, territory_id: str):
+    """Retorna información de un territorio por su ID único."""
+    return (
+        db.query(models.Territory, models.Team)
+        .outerjoin(
+            models.Team,
+            models.Territory.team_id == models.Team.team_id
+        )
+        .filter(
+            models.Territory.territory_id == territory_id
+        )
+        .first()
+    )
+
+def get_all_territories(db: Session, limit: Optional[int] = None):
+    """Retorna información de todos los territorios."""
+    query = (
+        db.query(models.Territory, models.Team)
+        .outerjoin(
+            models.Team,
+            models.Territory.team_id == models.Team.team_id
+            )
+        )
+    if(limit is not None):
+        query = query.limit(limit)
+
+    return query
+
+def get_all_team_territories(db: Session, team_id: int):
+    """Retorna información de todos los territorios de un equipo."""
+    return (
+        db.query(models.Territory)
+        .filter(
+            models.Territory.team_id == team_id
+        )
+        .all()
+    )
+
+def create_territory(db: Session, territory_in: TerritoryCreate):
+    """Crea un nuevo territorio en la base de datos"""
+    db_territory = models.Territory(
+        territory_id = territory_in.territory_id,
+        team_id = None,
+        health_points = settings.base_territory_health
+    )
+    db.add(db_territory)
+    db.flush()
+    return db_territory
+
+def update_territory(
+        db: Session,
+        db_territory: models.Territory, 
+        territory_update: TerritoryUpdate
+    ):
+    """
+    Aplica puntos a un territorio y determina si la acción 
+    es ataque, defensa o captura.
+    """
+    update_data = territory_update.model_dump(
+        exclude_unset=True,
+        exclude={"territory_id"}
+    )
+    
+    for key, value in update_data.items():
+        setattr(db_territory, key, value)
+
+    db.commit()
+    db.refresh(db_territory)
+
+    return db_territory
+
+def get_locked_territory(db: Session,territory_id: str):
+    """Obtiene y bloquea un territorio para evitar modificaciones simultáneas."""
+    db.execute(
+        text("SELECT pg_advisory_xact_lock(hashtext(:territory_id))"),
+        {"territory_id": territory_id}
+    )
+    return (
+        db.query(models.Territory)
+        .filter(
+            models.Territory.territory_id == territory_id
+        )
+        .with_for_update()
+        .first()
+    )
+
