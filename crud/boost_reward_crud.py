@@ -19,8 +19,7 @@ def create_boost_reward(db: Session, reward_in: BoostRewardCreate):
     """Crea una recompensa de potenciador."""
     db_boost_reward = models.ChallengeBoosts(**reward_in.model_dump())
     db.add(db_boost_reward)
-    db.commit()
-    db.refresh(db_boost_reward)
+    db.flush()
     return db_boost_reward
 
 def update_boost_reward(db: Session, db_boost_reward: models.ChallengeBoosts, reward_in: BoostRewardUpdate):

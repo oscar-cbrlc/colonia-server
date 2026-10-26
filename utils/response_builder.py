@@ -352,7 +352,7 @@ def build_started_challenge_response(
     )
 
 def get_started_challenges_data(db: Session, current_user: models.Users):
-    """Obtiene los datos de los desafíos iniciadospor el jugador"""
+    """Obtiene los datos de los desafíos iniciados por el jugador"""
     started = started_challenges_crud.get_user_started_challenges(db, current_user)
     return  [
         build_started_challenge_response(db, started_challenges, active_challenges)
@@ -362,6 +362,22 @@ def get_started_challenges_data(db: Session, current_user: models.Users):
 def get_active_challenges_data(db: Session, current_user: models.Users):
     """Obtiene los datos de los desafíos activos actualmente"""
     active = started_challenges_crud.get_active_challenges(db, current_user)
+    return  [
+        build_started_challenge_response(db, None, active_challenges)
+        for active_challenges in active
+    ]
+
+def get_started_events_data(db: Session, current_user: models.Users):
+    """Obtiene los datos de los eventos iniciados por el jugador"""
+    started = started_challenges_crud.get_user_started_events(db, current_user)
+    return  [
+        build_started_challenge_response(db, started_challenges, active_challenges)
+        for started_challenges, active_challenges in started
+    ]
+
+def get_active_events_data(db: Session, current_user: models.Users):
+    """Obtiene los datos de los eventos activos actualmente"""
+    active = started_challenges_crud.get_active_events(db, current_user)
     return  [
         build_started_challenge_response(db, None, active_challenges)
         for active_challenges in active

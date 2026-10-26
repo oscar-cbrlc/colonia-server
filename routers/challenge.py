@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from schema.challenge_schema import ChallengeCreate, ChallengeUpdate, ChallengeResponse
-from crud import user_crud, challenge_crud, active_challenges_crud
+from crud import user_crud, challenge_crud, active_challenges_crud, boost_reward_crud
 from database import get_db
 from model import models
 from utils.auth import get_current_user
@@ -47,6 +47,11 @@ def create_challenge(
     """Crea un nuevo desafío. Requiere permisos de administrador"""
 
     db_challenge = challenge_crud.create_challenge(db, challenge_in)
+    for boost_reward in challenge_in.boosts_reward:
+        boost_reward.challenge_id = db_challenge.challenge_id
+        boost_reward_crud.create_boost_reward(db, boost_reward)
+    
+    db.commit()
     return build_challenge_response(db, db_challenge)
 
 @router.get("/", response_model = list[ChallengeResponse])

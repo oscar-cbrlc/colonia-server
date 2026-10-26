@@ -11,22 +11,34 @@ def get_challenge_by_id(db: Session, challenge_id: int):
     """Busca un desafío por su ID único."""
     return db.query(models.Challenge).filter(models.Challenge.challenge_id == challenge_id).first()
 
+def get_challenges_by_objective(db: Session, objective_type: int):
+    """Retorna todos los desafios con el tipo de objetivo seleccionado"""
+    return(
+        db.query(models.Challenge)
+        .filter(models.Challenge.objective_type == objective_type)
+        .all()
+    )
+
 def create_challenge(db: Session, challenge_in: ChallengeCreate):
     """Crea un nuevo desafío en la base de datos"""
+    
     challenge_name = None
     if challenge_in.challenge_name is not None:
         challenge_name = challenge_in.challenge_name
-    
+        
+    item_reward = None
+    if challenge_in.avatar_item_id is not None:
+        item_reward = challenge_in.avatar_item_id
+
     db_challenge = models.Challenge(
         challenge_name = challenge_name,
-        challenge_reward = challenge_in.challege_reward,
         objective_type = challenge_in.objective_type,
         objective_condition = challenge_in.objective_condition,
-        challenge_difficulty = challenge_in.challenge_difficulty
+        challenge_difficulty = challenge_in.challenge_difficulty,
+        avatar_item_id = item_reward
     )
     db.add(db_challenge)
-    db.commit()
-    db.refresh(db_challenge)
+    db.flush()
     return db_challenge
 
 def update_challenge(db: Session, db_challenge: models.Challenge, challenge_update: ChallengeUpdate):

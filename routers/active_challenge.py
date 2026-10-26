@@ -2,11 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from schema.active_challenges_schema import ActiveChallengeCreate, ActiveChallengeUpdate, ActiveChallengeResponse
 from schema.started_challenges_schema import StartedChallengeResponse
-from crud import user_crud, active_challenges_crud, started_challenges_crud
+from crud import user_crud, active_challenges_crud
 from database import get_db
 from model import models
 from utils.auth import get_current_user
-from utils.response_builder import build_active_challenge_response, get_started_challenges_data, get_active_challenges_data
+from utils.response_builder import(
+    build_active_challenge_response,
+    get_active_challenges_data, 
+    get_started_challenges_data, 
+    get_active_events_data,
+    get_started_events_data
+) 
 
 router = APIRouter(
     prefix="/activeChallenge",
@@ -21,16 +27,6 @@ def require_admin(current_user: models.Users = Depends(get_current_user),) -> mo
         )
     return current_user
 
-def is_challenge_active(challenge_id: int, db: Session) -> models.Challenge:
-    db_challenge = active_challenges_crud.get_active_challenge_by_id(db, challenge_id)
-    active_challenges = active_challenges_crud.get_all_active_challenges(db)
-    if db_challenge not in active_challenges:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Desafìo no disponible actualmente.",
-        )
-    return db_challenge
-
 def get_existing_active_challenge(active_challenge_id: int, db: Session) -> models.ActiveChallenges:
     db_active_challenge = active_challenges_crud.get_active_challenge_by_id(db, active_challenge_id)
     if db_active_challenge is None:
@@ -44,6 +40,15 @@ def get_existing_active_challenge(active_challenge_id: int, db: Session) -> mode
 def list_active_challenges(db: Session = Depends(get_db)):
     """Retorna la lista de desafiós activos actualmente."""
     results = active_challenges_crud.get_all_active_challenges(db)
+    return[
+        build_active_challenge_response(db, db_active_challenge)
+        for db_active_challenge in results
+    ]
+
+@router.get("/events", response_model = list[ActiveChallengeResponse])
+def list_events(db: Session = Depends(get_db)):
+    """Retorna la lista de desafíos de tipo evento programados."""
+    results = active_challenges_crud.get_all_events(db)
     return[
         build_active_challenge_response(db, db_active_challenge)
         for db_active_challenge in results
@@ -85,5 +90,16 @@ def list_challenge_progress(
     """Retorna la lista de progreso del jugador en los desafiós activos actualmente."""
     started = get_started_challenges_data(db, current_user)
     active = get_active_challenges_data(db, current_user)
+
+    return started + active
+
+@router.get("/events/mine/progress", response_model = list[StartedChallengeResponse])
+def list_event_progress(
+        current_user: models.Users = Depends(get_current_user),
+        db: Session = Depends(get_db),
+    ):
+    """Retorna la lista de progreso del jugador en los eventos activos actualmente."""
+    started = get_started_events_data(db, current_user)
+    active = get_active_events_data(db, current_user)
 
     return started + active

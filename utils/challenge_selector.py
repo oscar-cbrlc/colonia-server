@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 import random 
 from crud.challenge_crud import get_all_challenges
 from crud.active_challenges_crud import get_all_active_challenges, get_expired_challenges
-from enums.enum_types import Difficulty_Type
+from enums.enum_types import Difficulty_Type, Objective_Type
 
 def get_challenges(
         db: Session,
@@ -26,7 +26,10 @@ def get_challenges(
     challenges = [
         challenge
         for challenge in get_all_challenges(db)
-        if challenge.challenge_id not in excluded_ids
+        if (
+            challenge.challenge_id not in excluded_ids and
+            challenge.objective_type != Objective_Type.route
+        )
     ]
     random.shuffle(challenges)
 
@@ -48,7 +51,12 @@ def get_challenges(
 def activate_challenges(db: Session, challenges: list[models.Challenge]):
     """Realiza la activación de una lista de desafíos"""
     now = datetime.now(timezone.utc)
-    end_date = now + timedelta(days=6, hours=23, minutes=59)
+    end_date = (now + timedelta(days=6)).replace(
+        hour=23,
+        minute=59,
+        second=0,
+        microsecond=0
+    )
     for challenge in challenges:
         db_active_challenge = models.ActiveChallenges(
             challenge_id = challenge.challenge_id,

@@ -3,10 +3,36 @@ from sqlalchemy import delete
 from model import models
 from schema.active_challenges_schema import ActiveChallengeCreate, ActiveChallengeUpdate
 from datetime import datetime, timezone
+from enums.enum_types import Objective_Type
 
 def get_all_active_challenges(db: Session):
     """Retorna todos los desafíos activos."""
-    return db.query(models.ActiveChallenges).all()
+    return (
+        db.query(models.ActiveChallenges)
+        .join( 
+            models.Challenge,
+            models.ActiveChallenges.challenge_id == models.Challenge.challenge_id
+        )
+        .filter(
+            models.ActiveChallenges.challenge_start_date <= datetime.now(timezone.utc),
+            models.Challenge.objective_type != Objective_Type.route
+        )
+        .all()
+    )
+
+def get_all_events(db: Session):
+    """Retorna todos los desafíos activos clasificados como eventos."""
+    return (
+        db.query(models.ActiveChallenges)
+        .join( 
+            models.Challenge,
+            models.ActiveChallenges.challenge_id == models.Challenge.challenge_id
+        )
+        .filter(
+            models.Challenge.objective_type == Objective_Type.route
+        )
+        .all()
+    )
 
 def get_active_challenge_by_id(db: Session, active_challenge_id: int):
     """Busca un desafío activo por su ID único."""
