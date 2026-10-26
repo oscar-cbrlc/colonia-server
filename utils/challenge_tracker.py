@@ -4,8 +4,15 @@ from config import settings
 from decimal import Decimal
 from datetime import datetime, timezone
 from schema.challenge_schema import Challenge_metrics
+from schema.territory_schema import TerritoryBase
 from crud.challenge_crud import get_challenge_by_id
-from crud.started_challenges_crud import get_active_challenges, get_user_started_challenges, get_user_started_challenge_by_id, assign_active_challenge
+from crud.started_challenges_crud import (
+    get_active_challenges,
+    get_active_events,
+    get_user_started_challenges, 
+    get_user_started_challenge_by_id, 
+    assign_active_challenge
+)
 from enums.enum_types import Objective_Type
 from utils.reward_system import give_challenge_reward
 
@@ -44,17 +51,26 @@ def get_new_started_challenges(
         progress: Challenge_metrics
     ) -> list[models.StartedChallenges]:
     """Verifica si se realiza progreso en desafíos aun no iniciados por el usuario."""
-    not_started = get_active_challenges(db, current_user)
+    not_started_challenges = get_active_challenges(db, current_user)
+    not_started_events = get_active_events(db, current_user)
+    not_started = not_started_challenges + not_started_events
     started = []
-    now = datetime.now(timezone.utc)
 
     for active_challenge in not_started:
-        if(active_challenge.challenge_start_date > now):
-            continue
         if is_challenge_progressed(db, current_user, active_challenge, None, progress):
             db_started_challenge = get_user_started_challenge_by_id(db, current_user, active_challenge)
             started.append(db_started_challenge)
     return started
+
+def is_challenge_active(db_active_challenge: models.ActiveChallenges):
+    """Verifica si un desafío activo ha iniciado y aún no expira"""
+    now = datetime.now(timezone.utc)
+    start_date = db_active_challenge.challenge_start_date
+    expire_date = db_active_challenge.challenge_end_date
+
+    if(start_date > now ) or (now > expire_date):
+        return False
+    return True
 
 def is_challenge_progressed(
         db: Session,
@@ -63,6 +79,9 @@ def is_challenge_progressed(
         db_started_challenge: models.StartedChallenges,
         progress_data: Challenge_metrics) -> bool:
     """Verifica si un desafío es progresado, aumentando el progreso correspondiente si es el caso"""
+
+    if is_challenge_active(db_active_challenge) is False:
+        return False
 
     if db_started_challenge is not None:
         if db_started_challenge.is_complete:
@@ -110,6 +129,13 @@ def is_challenge_progressed(
             progress = progress_data.captured_territories
             objective = objective['captured_territories'] 
 
+        case Objective_Type.route:
+            traversed_territories = progress_data.traversed_territories
+            target_territories = objective['route']
+            if is_route_traversed(traversed_territories, target_territories):
+                progress = 1
+                objective = 1
+
     if progress > 0:
         progress_challenge(db, current_user, db_challenge, db_active_challenge, db_started_challenge, progress, objective)
         return True
@@ -135,3 +161,12 @@ def progress_challenge(
         db_started_challenge.progress = objective
         db_started_challenge.is_complete = True
         give_challenge_reward(db, current_user, db_challenge)
+
+def is_route_traversed(
+        traversed_territories: set,
+        target_territories: list[str]
+    ):
+    """Verifica si todos los territorios de una ruta han sido atravesados"""
+    set_target_territories = set(target_territories)
+    result = all(x in set_target_territories for x in traversed_territories)
+    return result

@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import delete
 from model import models
-from schema.started_challenges_schema import StartedChallengeUpdate, StartedChallengeResponse
+from schema.started_challenges_schema import StartedChallengeUpdate
+from enums.enum_types import Objective_Type
 
 def get_user_started_challenges(db: Session, current_user: models.Users):
     """Retorna la lista de todos los desafiíos ya iniciados de un jugador."""
@@ -11,13 +12,43 @@ def get_user_started_challenges(db: Session, current_user: models.Users):
             models.ActiveChallenges,
             models.StartedChallenges.active_challenge_id == models.ActiveChallenges.active_challenge_id
         )
-        .filter(models.StartedChallenges.user_id == current_user.user_id)
+        .join(
+            models.Challenge,
+            models.ActiveChallenges.challenge_id == models.Challenge.challenge_id
+        )
+        .filter(
+            models.StartedChallenges.user_id == current_user.user_id,
+            models.Challenge.objective_type != Objective_Type.route
+        )
         .all()
     )
 
 def get_active_challenges(db: Session, current_user: models.Users):
     """Retorna la lista de desafíos activos que un jugador aun no inicía."""
-    obtained = (
+    started = (
+        db.query(models.StartedChallenges.active_challenge_id)
+        .filter(
+             models.StartedChallenges.user_id == current_user.user_id,
+             models.StartedChallenges.active_challenge_id == models.ActiveChallenges.active_challenge_id
+         )
+        .exists()
+    )
+    return (
+        db.query(models.ActiveChallenges)
+        .join(
+            models.Challenge,
+            models.ActiveChallenges.challenge_id == models.Challenge.challenge_id
+        )
+        .filter(
+            ~started, 
+            models.Challenge.objective_type != Objective_Type.route
+        )
+        .all()
+    )
+
+def get_active_events(db: Session, current_user: models.Users):
+    """Retorna la lista de eventos activos que un jugador aun no inicía."""
+    started = (
         db.query(models.StartedChallenges.active_challenge_id)
         .filter(
             models.StartedChallenges.user_id == current_user.user_id,
@@ -27,7 +58,33 @@ def get_active_challenges(db: Session, current_user: models.Users):
     )
     return (
         db.query(models.ActiveChallenges)
-        .filter(~obtained)
+        .join(
+            models.Challenge,
+            models.ActiveChallenges.challenge_id == models.Challenge.challenge_id
+        )
+        .filter(
+            ~started, 
+            models.Challenge.objective_type == Objective_Type.route
+        )
+        .all()
+    )
+
+def get_user_started_events(db: Session, current_user: models.Users):
+    """Retorna la lista de todos los eventos ya iniciados de un jugador."""
+    return (
+        db.query(models.StartedChallenges, models.ActiveChallenges)
+        .join(
+            models.ActiveChallenges,
+            models.StartedChallenges.active_challenge_id == models.ActiveChallenges.active_challenge_id
+        )
+        .join(
+            models.Challenge,
+            models.ActiveChallenges.challenge_id == models.Challenge.challenge_id
+        )
+        .filter(
+            models.StartedChallenges.user_id == current_user.user_id,
+            models.Challenge.objective_type == Objective_Type.route
+        )
         .all()
     )
 

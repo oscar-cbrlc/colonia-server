@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
-from schema.challenge_schema import ChallengeResponse
+from schema.challenge_schema import ChallengeCreate, ChallengeResponse
 
 class ActiveChallengeBase(BaseModel):
     challenge_id: int
@@ -23,3 +23,8 @@ class ActiveChallengeResponse(BaseModel):
     challenge_end_date: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class EventCreate(BaseModel):
+    challenge: ChallengeCreate
+    challenge_start_date: datetime
+    challenge_end_date: datetime

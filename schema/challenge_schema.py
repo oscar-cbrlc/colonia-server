@@ -1,13 +1,14 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from decimal import Decimal
-from schema.boost_reward_schema import BoostRewardResponse
+from schema.boost_reward_schema import BoostRewardCreate, BoostRewardResponse
 from schema.avatar_item_schema import AvatarItemResponse
 
 class ChallengeBase(BaseModel):
     objective_type: int
     objective_condition: dict
     challenge_difficulty: int
+    boosts_reward: list[BoostRewardCreate]
 
 class ChallengeCreate(ChallengeBase):
     challenge_name: Optional[str] = None
@@ -41,4 +42,4 @@ class Challenge_metrics(BaseModel):
     run_distance: Decimal
     bike_distance: Decimal
     captured_territories: int
-    # To do: Add route metric
+    traversed_territories : set

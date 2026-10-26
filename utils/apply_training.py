@@ -47,9 +47,14 @@ def apply_points(territory: models.Territory, user_team: int, points: Decimal) -
 def round_points(points: Decimal) -> Decimal:
     return points.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
-# To do: Add challenge metric for complete route
 def get_challenge_metrics(impact_progress: TerritoryListUpdate, territories_captured: int) -> Challenge_metrics:
     """Obtiene datos de todas las métricas de progreso para los desafíos"""
+
+    territories_list = set()
+    for territory in impact_progress.territories:
+        territory_id = territory.territory_id
+        territories_list.add(territory_id)
+
     return Challenge_metrics(
         total_time = impact_progress.total_time,
         walk_time = impact_progress.seconds_walk,
@@ -59,7 +64,8 @@ def get_challenge_metrics(impact_progress: TerritoryListUpdate, territories_capt
         walk_distance = impact_progress.meters_walk,
         run_distance = impact_progress.meters_run,
         bike_distance = impact_progress.meters_bike,
-        captured_territories = territories_captured
+        captured_territories = territories_captured,
+        traversed_territories = territories_list
     )
 
 def apply_training_impact(
