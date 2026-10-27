@@ -9,7 +9,6 @@ class AvatarInventoryCreate(BaseModel):
     item_acquisition_date: datetime
 
 class AvatarInventoryResponse(BaseModel):
-    user_id: int
     item: AvatarItemResponse
     item_adquisition_date: datetime
     model_config = ConfigDict(from_attributes=True)

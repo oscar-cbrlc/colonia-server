@@ -12,7 +12,7 @@ def get_avatar_inventory(db: Session,  user_id: int):
             models.AvatarItem,
             models.AvatarInventory.avatar_item_id == models.AvatarItem.avatar_item_id
         )
-        .filter(models.BoostInventory.user_id == user_id)
+        .filter(models.AvatarInventory.user_id == user_id)
         .all()
     )
 

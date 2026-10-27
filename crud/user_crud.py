@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from model import models
-from schema.user_schema import UserCreate, UserUpdate
+from schema.user_schema import UserCreate, UserUpdate, UserAvatarUpdate
 from utils.security import hash_password, verify_password
 from fastapi import HTTPException, status
 from enums.enum_types import TeamRole, UserType, Message_Type
@@ -74,6 +74,17 @@ def update_user(db: Session, db_user: models.Users, user_update: UserUpdate):
         update_data.pop("password")
     
     # se actualizan cada uno de los cambios
+    for key, value in update_data.items():
+        setattr(db_user, key, value)
+        
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def update_user_avatar(db: Session, db_user: models.Users, avatar_update: UserAvatarUpdate):
+    """Actualiza información del avatar del usuario"""
+    update_data = avatar_update.model_dump(exclude_unset=True)
+    
     for key, value in update_data.items():
         setattr(db_user, key, value)
         

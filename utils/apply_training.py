@@ -21,6 +21,8 @@ from utils.response_builder import build_achievement_response, build_started_cha
 from utils.challenge_tracker import check_challenges
 from utils.user_leveling_system import give_training_xp
 from enums.enum_types import Boost_Type
+import traceback
+
 
 def apply_points(territory: models.Territory, user_team: int, points: Decimal) -> str:
     """Determina la acción realizada sobre el territorio y se realizan calculos de puntaje"""
@@ -220,6 +222,8 @@ def apply_training_impact(
             challenges = challenges_results
         )
 
-    except Exception:
+    except Exception as Error:
         db.rollback()
+        print(Error)
+        traceback.print_exc()
         raise
