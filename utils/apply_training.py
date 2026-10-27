@@ -222,7 +222,8 @@ def apply_training_impact(
             challenges = challenges_results
         )
 
-    except Exception:
+    except Exception as Error:
         db.rollback()
+        print(Error)
         traceback.print_exc()
         raise
