@@ -37,56 +37,18 @@ from schema.challenge_schema import ChallengeResponse
 from schema.active_challenges_schema import ActiveChallengeResponse
 from schema.obtained_achievements_schema import AchievementDetails
 from schema.avatar_item_schema import AvatarItemResponse
+from schema.avatar_inventory_schema import AvatarInventoryResponse
 from schema.boost_reward_schema import BoostRewardResponse
 from schema.started_challenges_schema import StartedChallengeResponse
 from utils.user_leveling_system import get_user_level
 from config import settings
 
-def search_item_data(db: Session, item_id: int):
-    return (
-        db.query(models.AvatarItem)
-        .filter(models.AvatarItem.avatar_item_id == item_id)
-        .first()
-    )
-
 def get_user_data(db: Session, db_user: models.Users):
     """Obtener datos de un usuario para usar en Response"""
 
-    # Todo - Implementar item_crud para obtener urls
-    head_data = None
-    neck_data = None
-    body_data = None
-    footwear_data = None
-    if db_user.avatar_head is not None:
-        avatar_item = search_item_data(db, db_user.avatar_head)
-        if avatar_item is not None:
-            head_data = avatar_item.item_url
-
-    if db_user.avatar_neck is not None:
-        avatar_item = search_item_data(db, db_user.avatar_neck)
-        if avatar_item is not None:
-            neck_data = avatar_item.item_url
-
-    if db_user.avatar_body is not None:
-        avatar_item = search_item_data(db, db_user.avatar_body)
-        if avatar_item is not None:
-            body_data = avatar_item.item_url
-
-    if db_user.avatar_footwear is not None:
-        avatar_item = search_item_data(db, db_user.avatar_footwear)
-        if avatar_item is not None:
-            footwear_data = avatar_item.item_url
-
-    avatar = UserAvatarResponse(
-        user_thumbnail = db_user.user_thumbnail,
-        model_url = settings.model_url,
-        avatar_head = head_data,
-        avatar_neck = neck_data,
-        avatar_body = body_data,
-        avatar_footwear = footwear_data,
-        avatar_color = db_user.avatar_color
-    )
+    avatar = build_avatar_response(db, db_user)
     user_level = get_user_level(db_user)
+
     stats = UserStatsResponse(
         user_xp = db_user.user_exp,
         user_level = user_level[0],
@@ -98,16 +60,8 @@ def get_user_data(db: Session, db_user: models.Users):
     )
 
     team = None
-
     if db_user.user_team is not None:
-        db_team = (
-            db.query(models.Team)
-            .filter(
-                models.Team.team_id == db_user.user_team
-            )
-            .first()
-        )
-
+        db_team = team_crud.get_team_by_id(db, db_user.user_team)
         if db_team:
             team = UserTeamResponse(
                 team_id = db_team.team_id,
@@ -275,6 +229,45 @@ def build_avatar_item_response(db_item: models.AvatarItem):
         item_type = AvatarItemType(db_item.item_type).name,
         item_image = db_item.item_image,
         item_url = db_item.item_url
+    )
+
+def build_avatar_inventory_response(db_inventory: models.AvatarInventory, db_item: models.AvatarItem):
+    """Construye el response para un inventario de items de avatar"""
+    return AvatarInventoryResponse(
+        item = build_avatar_item_response(db_item),
+        item_adquisition_date = db_inventory.item_acquisition_date
+    )
+
+def build_avatar_response(db: Session, db_user: models.Users):
+    """Construye un response para el avatar de un usuario"""
+    head_data = None
+    neck_data = None
+    body_data = None
+    footwear_data = None
+    if db_user.avatar_head is not None:
+        head_item = avatar_item_crud.get_item_by_id(db, db_user.avatar_head)
+        head_data = build_avatar_item_response(head_item)
+
+    if db_user.avatar_neck is not None:
+        neck_item = avatar_item_crud.get_item_by_id(db, db_user.avatar_neck)
+        neck_data = build_avatar_item_response(neck_item)
+
+    if db_user.avatar_body is not None:
+        body_item = avatar_item_crud.get_item_by_id(db, db_user.avatar_body)
+        body_data = build_avatar_item_response(body_item)
+
+    if db_user.avatar_footwear is not None:
+        footwear_item = avatar_item_crud.get_item_by_id(db, db_user.avatar_footwear)
+        footwear_data = build_avatar_item_response(footwear_item)
+
+    return UserAvatarResponse(
+        user_thumbnail = db_user.user_thumbnail,
+        model_url = settings.model_url,
+        avatar_head = head_data,
+        avatar_neck = neck_data,
+        avatar_body = body_data,
+        avatar_footwear = footwear_data,
+        avatar_color = db_user.avatar_color
     )
 
 def build_boost_reward_response(db: Session, db_challenge: models.Challenge):

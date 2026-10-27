@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
 from schema.obtained_achievements_schema import AchievementDetails
+from schema.avatar_item_schema import AvatarItemResponse
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -35,13 +36,20 @@ class UserUpdate(BaseModel):
     coin_amount: Optional[int] = None
     user_thumbnail: Optional[str] = None
 
+class UserAvatarUpdate(BaseModel):
+    avatar_head: Optional[int] = None
+    avatar_neck: Optional[int] = None
+    avatar_body: Optional[int] = None
+    avatar_footwear: Optional[int] = None
+    avatar_color: Optional[int] = None
+
 class UserAvatarResponse(BaseModel):
     user_thumbnail: Optional[str] = None
     model_url: str
-    avatar_head: Optional[str] = None
-    avatar_neck: Optional[str] = None
-    avatar_body: Optional[str] = None
-    avatar_footwear: Optional[str] = None
+    avatar_head: Optional[AvatarItemResponse] = None
+    avatar_neck: Optional[AvatarItemResponse] = None
+    avatar_body: Optional[AvatarItemResponse] = None
+    avatar_footwear: Optional[AvatarItemResponse] = None
     avatar_color: int
 
 class UserStatsResponse(BaseModel):

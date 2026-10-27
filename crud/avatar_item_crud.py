@@ -27,8 +27,8 @@ def create_avatar_item(db: Session, avatar_item_in: ItemCreate):
     db.refresh(db_item)
     return db_item
 
-def update_boost(db: Session, db_item: models.AvatarItem, item_in: ItemUpdate):
-    """Actualiza solamente los campos recibidos de un potenciador."""
+def update_avatar_item(db: Session, db_item: models.AvatarItem, item_in: ItemUpdate):
+    """Actualiza solamente los campos recibidos de un item de avatar."""
     update_data = item_in.model_dump(exclude_unset=True, exclude_none=True)
     for field, value in update_data.items():
         setattr(db_item, field, value)
@@ -37,7 +37,7 @@ def update_boost(db: Session, db_item: models.AvatarItem, item_in: ItemUpdate):
     db.refresh(db_item)
     return db_item
 
-def delete_boost(db: Session, avatar_item_id: int):
+def delete_avatar_item(db: Session, avatar_item_id: int):
     """Elimina un item de avatar y deja que PostgreSQL aplique sus cascadas."""
     db.execute(delete(models.AvatarItem).where(models.AvatarItem.avatar_item_id == avatar_item_id))
     db.commit()
