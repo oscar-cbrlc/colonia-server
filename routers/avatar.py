@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 from crud import avatar_item_crud, avatar_inventory_crud, user_crud
 from database import get_db
 from model import models
-from schema.user_schema import UserAvatarUpdate, UserAvatarResponse
+from schema.user_schema import UserAvatarUpdate, AvatarUpdateResponse
 from schema.avatar_item_schema import AvatarItemResponse
 from schema.avatar_inventory_schema import AvatarInventoryResponse
 from utils.auth import get_current_user
-from utils.response_builder import build_avatar_item_response, build_avatar_inventory_response, build_avatar_response
+from utils.response_builder import build_avatar_item_response, build_avatar_inventory_response, build_avatar_update_response
 
 router = APIRouter(
     prefix="/avatar",
@@ -35,7 +35,7 @@ def list_my_avatar_inventory(
         for db_inventory, db_avatar_item  in results
     ]
 
-@router.patch("/users/me", response_model=UserAvatarResponse)
+@router.patch("/users/me", response_model=AvatarUpdateResponse)
 def update_avatar(
     avatar_update: UserAvatarUpdate, 
     current_user: models.Users = Depends(get_current_user), 
@@ -43,4 +43,4 @@ def update_avatar(
 ):
     """Actualiza datos del avatar del usuario autenticado."""
     db_user = user_crud.update_user_avatar(db, current_user, avatar_update)
-    return build_avatar_response(db, db_user)
+    return build_avatar_update_response(db, db_user)
