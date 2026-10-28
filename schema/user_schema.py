@@ -46,6 +46,15 @@ class UserAvatarUpdate(BaseModel):
 class UserAvatarResponse(BaseModel):
     user_thumbnail: Optional[str] = None
     model_url: str
+    avatar_head: Optional[int] = None
+    avatar_neck: Optional[int] = None
+    avatar_body: Optional[int] = None
+    avatar_footwear: Optional[int] = None
+    avatar_color: int
+
+class AvatarUpdateResponse(BaseModel):
+    user_thumbnail: Optional[str] = None
+    model_url: str
     avatar_head: Optional[AvatarItemResponse] = None
     avatar_neck: Optional[AvatarItemResponse] = None
     avatar_body: Optional[AvatarItemResponse] = None

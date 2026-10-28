@@ -15,6 +15,7 @@ from schema.user_schema import (
     UserResponse,
     UserBaseResponse,
     UserAvatarResponse,
+    AvatarUpdateResponse,
     UserStatsResponse,
     UserTeamResponse
 )
@@ -246,6 +247,38 @@ def build_avatar_response(db: Session, db_user: models.Users):
     footwear_data = None
     if db_user.avatar_head is not None:
         head_item = avatar_item_crud.get_item_by_id(db, db_user.avatar_head)
+        head_data = head_item.avatar_item_id
+
+    if db_user.avatar_neck is not None:
+        neck_item = avatar_item_crud.get_item_by_id(db, db_user.avatar_neck)
+        neck_data = neck_item.avatar_item_id
+
+    if db_user.avatar_body is not None:
+        body_item = avatar_item_crud.get_item_by_id(db, db_user.avatar_body)
+        body_data = body_item.avatar_item_id
+
+    if db_user.avatar_footwear is not None:
+        footwear_item = avatar_item_crud.get_item_by_id(db, db_user.avatar_footwear)
+        footwear_data = footwear_item.avatar_item_id
+
+    return UserAvatarResponse(
+        user_thumbnail = db_user.user_thumbnail,
+        model_url = settings.model_url,
+        avatar_head = head_data,
+        avatar_neck = neck_data,
+        avatar_body = body_data,
+        avatar_footwear = footwear_data,
+        avatar_color = db_user.avatar_color
+    )
+
+def build_avatar_update_response(db: Session, db_user: models.Users):
+    """Construye un response para la actualización de avatar de un usuario"""
+    head_data = None
+    neck_data = None
+    body_data = None
+    footwear_data = None
+    if db_user.avatar_head is not None:
+        head_item = avatar_item_crud.get_item_by_id(db, db_user.avatar_head)
         head_data = build_avatar_item_response(head_item)
 
     if db_user.avatar_neck is not None:
@@ -260,7 +293,7 @@ def build_avatar_response(db: Session, db_user: models.Users):
         footwear_item = avatar_item_crud.get_item_by_id(db, db_user.avatar_footwear)
         footwear_data = build_avatar_item_response(footwear_item)
 
-    return UserAvatarResponse(
+    return AvatarUpdateResponse(
         user_thumbnail = db_user.user_thumbnail,
         model_url = settings.model_url,
         avatar_head = head_data,
