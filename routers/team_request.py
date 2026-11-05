@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from schema.team_request_schema import RequestCreate, UserRequestResponse, TeamRequestResponse
-from utils.auth import get_current_user
-from crud import team_request_crud, user_crud, team_crud
 from typing import List
 from model import models
-from enums.enum_types import TeamRole
+from schema.team_request_schema import RequestCreate, UserRequestResponse, TeamRequestResponse
+from schema.notification_schema import NotificationCreate
+from utils.auth import get_current_user
+from crud import team_request_crud, user_crud, team_crud
+from routers.notification import create_user_notification
+from enums.enum_types import TeamRole, Notification_Type
 
 router = APIRouter(
     prefix="/teamRequest",
@@ -29,10 +31,7 @@ def register(
         )
     
     db_request = team_request_crud.create_request(db, current_user, request_in)
-    db_team = team_crud.get_team_by_id(
-        db,
-        db_request.team_id
-    )
+    db_team = team_crud.get_team_by_id(db,request_in.team_id)
 
     return {
         "request_timestamp": db_request.request_timestamp,
@@ -99,6 +98,8 @@ def accept_request(
             detail="Solicitud no encontrada"
         )
 
+    create_user_notification(db, current_user.user_team, Notification_Type.join_team_request_accepted, user_id)
+
     db_user = user_crud.get_user_by_id(db, db_request.user_id)
     user_crud.assign_user_to_team(db, db_user, current_user.user_team, TeamRole.member)
     team_request_crud.delete_all_requests_by_user(db, db_request.user_id)
@@ -124,7 +125,7 @@ def reject_request(
             detail="Solicitud no encontrada"
         )
     
-    # Todo: Enviar notificación Solicitud denegada
+    create_user_notification(db, current_user.user_team, Notification_Type.join_team_request_denied, user_id)
 
     db_user = user_crud.get_user_by_id(db, db_request.user_id)
     team_request_crud.delete_request(db, user_id, current_user.user_team)

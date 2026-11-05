@@ -17,11 +17,9 @@ class AvatarItemType(IntEnum):
 
 class Notification_Type(IntEnum):
     global_notification = 1
-    join_team_request_recieved = 2
-    join_team_request_accepted = 3
-    join_team_request_denied = 4
-    team_kick = 5
-    warning = 6
+    join_team_request_accepted = 2
+    join_team_request_denied = 3
+    team_kick = 4
 
 class Objective_Type(IntEnum):
     total_time = 1

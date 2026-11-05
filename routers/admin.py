@@ -6,7 +6,8 @@ from schema.active_challenges_schema import EventCreate, ActiveChallengeCreate, 
 from utils.auth import get_current_user
 from utils.response_builder import build_active_challenge_response
 from model import models
-from enums.enum_types import UserType
+from routers.notification import create_global_notification
+from enums.enum_types import Notification_Type
 
 router = APIRouter(
     prefix="/admin",
@@ -41,6 +42,8 @@ def create_event(
         challenge_end_date = event_in.challenge_end_date
     )
 
+    challenge_name = challenge_in.challenge_name
+    create_global_notification(db, challenge_name, Notification_Type.global_notification)
     db_active_challenge = active_challenges_crud.create_active_challenge(db, active_challenge_in)
     return build_active_challenge_response(db, db_active_challenge)
 
