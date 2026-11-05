@@ -5,6 +5,7 @@ from utils.security import hash_password, verify_password
 from fastapi import HTTPException, status
 from enums.enum_types import TeamRole, UserType, Message_Type
 from crud.team_chat_crud import create_system_message
+from crud.notification_crud import create_notification
 
 def is_leader(db_user: models.Users):
     role_id = db_user.team_role
@@ -112,12 +113,22 @@ def get_all_team_users(db: Session, team_id: int, limit=25):
         .filter(models.Users.user_team == team_id)
         .order_by(
             models.Users.team_role.desc(),
-
-                  models.Users.user_name
+            models.Users.user_name
         )
         .limit(limit)
         .all()
     )
+
+def get_team_leader(db: Session, team_id: int):
+    """Retorna el usuario lider del equipo """
+    return (
+        db.query(models.Users)
+        .filter(
+            models.Users.user_team == team_id,
+            models.Users.team_role == TeamRole.leader
+        )
+        .first()
+    ) 
 
 def assign_user_to_team(db: Session, db_user: models.Users, team_id: int, team_role: TeamRole):
     """Asigna un usuario al equipo seleccionado, con el rol seleccionado."""

@@ -3,7 +3,8 @@ from model import models
 from schema.team_schema import TeamCreate, TeamUpdate, TeamStats
 from crud import user_crud, territory_crud
 from fastapi import HTTPException, status
-from enums.enum_types import TeamRole
+from enums.enum_types import TeamRole, Notification_Type
+from routers.notification import create_user_notification
 from typing import Optional
 
 def get_all_teams(db: Session, limit: Optional[int]):
@@ -126,6 +127,7 @@ def remove_all_team_users(db: Session, team_id: int):
     """Remueve todos los usuarios de un equipo"""
     team_users = user_crud.get_all_team_users(db, team_id)
     for user in team_users:
+        create_user_notification(db, team_id, Notification_Type.team_kick, user.user_id)
         user_crud.remove_user_from_team(db, user, is_kick=True)
     return team_users
 

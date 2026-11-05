@@ -7,8 +7,9 @@ from utils.auth import get_current_user
 from crud import team_crud, user_crud
 from typing import List
 from model import models
-from enums.enum_types import TeamRole
+from enums.enum_types import TeamRole, Notification_Type
 from utils.response_builder import get_user_response, build_team_data
+from routers.notification import create_user_notification
 
 router = APIRouter(
     prefix="/teams",
@@ -16,6 +17,7 @@ router = APIRouter(
 )
 
 def user_in_team(db: Session, user_id: int, team_id: int):
+    """Verifica si el usuario seleccionado pertenece al equipo del identificador"""
     user_db = user_crud.get_user_by_id(db, user_id)
     if not user_db:
         raise HTTPException(
@@ -145,6 +147,7 @@ def kick_from_team(
         )
     
     user_db = user_in_team(db, user_id, current_user.user_team)
+    create_user_notification(db, current_user.user_team, Notification_Type.team_kick, user_id)
     user_crud.remove_user_from_team(db, user_db, is_kick=True)
 
     db_team = team_crud.get_team_by_id(db, current_user.user_team)

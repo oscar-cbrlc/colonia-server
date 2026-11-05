@@ -28,6 +28,7 @@ from enums.enum_types import (
     Objective_Type, 
     Difficulty_Type, 
     AvatarItemType, 
+    Notification_Type
 )
 from schema.team_schema import TeamMember
 from schema.team_chat_schema import MessageUserResponse, MessageResponse
@@ -41,6 +42,7 @@ from schema.avatar_item_schema import AvatarItemResponse
 from schema.avatar_inventory_schema import AvatarInventoryResponse
 from schema.boost_reward_schema import BoostRewardResponse
 from schema.started_challenges_schema import StartedChallengeResponse
+from schema.notification_schema import NotificationResponse
 from utils.user_leveling_system import get_user_level
 from config import settings
 
@@ -408,3 +410,13 @@ def get_active_events_data(db: Session, current_user: models.Users):
         build_started_challenge_response(db, None, active_challenges)
         for active_challenges in active
     ]
+
+def build_notification_response(db: Session, db_notification: models.Notification):
+    """Construye Response para una notificación."""
+
+    return NotificationResponse(
+        notification_id = db_notification.notification_id,
+        notification_type = Notification_Type(db_notification.notification_type).name,
+        notification_message = db_notification.notification_message,
+        notification_date = db_notification.notification_date
+    )
