@@ -276,9 +276,7 @@ class StoreCatalog(Base):
     )
 
     offer_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    offer_name: Mapped[str] = mapped_column(Text, nullable=False)
     offer_type: Mapped[int] = mapped_column(Integer, nullable=False)
-    offer_image: Mapped[str] = mapped_column(Text, nullable=False)
     offer_price: Mapped[int] = mapped_column(Integer, nullable=False)
     avatar_item_id: Mapped[Optional[int]] = mapped_column(Integer)
     bundle_id: Mapped[Optional[int]] = mapped_column(Integer)
@@ -413,13 +411,13 @@ class Notification(Base):
     )
 
     notification_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
     notification_type: Mapped[int] = mapped_column(Integer, nullable=False)
     notification_message: Mapped[str] = mapped_column(Text, nullable=False)
     notification_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    user_id: Mapped[Optional[int]] = mapped_column(Integer)
 
     notification_type_: Mapped['NotificationType'] = relationship('NotificationType', back_populates='notification')
-    user: Mapped['Users'] = relationship('Users', back_populates='notification')
+    user: Mapped[Optional['Users']] = relationship('Users', back_populates='notification')
 
 
 class ObtainedAchievements(Base):

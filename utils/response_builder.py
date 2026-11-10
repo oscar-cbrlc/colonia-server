@@ -9,7 +9,10 @@ from crud import (
     boost_reward_crud, 
     challenge_crud, 
     active_challenges_crud,
-    started_challenges_crud
+    started_challenges_crud,
+    store_offer_crud,
+    bundle_crud,
+    item_bundle_crud
 )
 from schema.user_schema import (
     UserResponse,
@@ -17,7 +20,7 @@ from schema.user_schema import (
     UserAvatarResponse,
     AvatarUpdateResponse,
     UserStatsResponse,
-    UserTeamResponse
+    UserTeamResponse,
 )
 from enums.enum_types import (
     TeamRole, 
@@ -28,7 +31,8 @@ from enums.enum_types import (
     Objective_Type, 
     Difficulty_Type, 
     AvatarItemType, 
-    Notification_Type
+    Notification_Type,
+    Offer_Type
 )
 from schema.team_schema import TeamMember
 from schema.team_chat_schema import MessageUserResponse, MessageResponse
@@ -43,6 +47,9 @@ from schema.avatar_inventory_schema import AvatarInventoryResponse
 from schema.boost_reward_schema import BoostRewardResponse
 from schema.started_challenges_schema import StartedChallengeResponse
 from schema.notification_schema import NotificationResponse
+from schema.bundle_schema import BundleResponse
+from schema.item_bundle_schema import ItemBundleResponse
+from schema.store_offer_schema import StoreOfferResponse
 from utils.user_leveling_system import get_user_level
 from config import settings
 
@@ -419,4 +426,54 @@ def build_notification_response(db: Session, db_notification: models.Notificatio
         notification_type = Notification_Type(db_notification.notification_type).name,
         notification_message = db_notification.notification_message,
         notification_date = db_notification.notification_date
+    )
+
+def build_bundle_response(db: Session, db_bundle: models.Bundle):
+    """Construye Response para un paquete de items de avatar"""
+
+    bundle_info = BundleResponse(
+        bundle_id = db_bundle.bundle_id,
+        bundle_name = db_bundle.bundle_name,
+        bundle_image = db_bundle.bundle_image
+    )
+
+    items = item_bundle_crud.get_items_in_bundle(db, db_bundle.bundle_id)
+    items_info = [
+        build_avatar_item_response(db_item)
+        for db_item in items
+    ]
+
+    return ItemBundleResponse(
+        bundle = bundle_info,
+        avatar_items = items_info
+    )
+
+def build_store_offer_response(db: Session, db_offer: models.StoreCatalog):
+    """Construye Response para una oferta de tienda"""
+    offer_name = None
+    offer_image = None
+    
+    item_info = None
+    bundle_info = None
+
+    if db_offer.avatar_item_id is not None:
+        db_item = avatar_item_crud.get_item_by_id(db, db_offer.avatar_item_id)
+        item_info = build_avatar_item_response(db_item)
+        offer_name = db_item.item_name
+        offer_image = db_item.item_image
+
+    if db_offer.bundle_id is not None:
+        db_bundle = bundle_crud.get_bundle_by_id(db, db_offer.bundle_id)
+        bundle_info = build_bundle_response(db, db_bundle)
+        offer_name = db_bundle.bundle_name
+        offer_image = db_bundle.bundle_image
+
+    return StoreOfferResponse(
+        offer_id = db_offer.offer_id,
+        offer_name = offer_name,
+        offer_type = Offer_Type(db_offer.offer_type).name,
+        offer_image = offer_image,
+        offer_price = db_offer.offer_price,
+        avatar_item = item_info,
+        bundle = bundle_info
     )
