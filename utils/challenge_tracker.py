@@ -168,5 +168,5 @@ def is_route_traversed(
     ):
     """Verifica si todos los territorios de una ruta han sido atravesados"""
     set_target_territories = set(target_territories)
-    result = all(x in set_target_territories for x in traversed_territories)
+    result = all(x in traversed_territories for x in set_target_territories)
     return result
