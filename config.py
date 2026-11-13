@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     refresh_token_expires_days: int = 14
     environment: str = Field(alias="ENVIRONMENT", default="development")
 
-    member_limit: int = 25
+    team_member_limit: int = 25
 
     base_territory_health: int = 1000
     max_territory_health: int = 5000

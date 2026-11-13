@@ -10,6 +10,7 @@ from model import models
 from enums.enum_types import TeamRole, Notification_Type
 from utils.response_builder import get_user_response, build_team_data
 from routers.notification import create_user_notification
+from config import settings
 
 router = APIRouter(
     prefix="/teams",
@@ -26,10 +27,19 @@ def user_in_team(db: Session, user_id: int, team_id: int):
         )
     if(user_db.user_team != team_id):
         raise HTTPException(
-            status_code=403,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuario no pertenece al equipo"
         )
     return user_db
+
+def check_team_user_limit(db: Session, team_id: int):
+    """Verifica si el equipo seleccionado ha alcanzado su limite de usuarios"""
+    team_users = user_crud.get_all_team_users(db, team_id)
+    if len(team_users) >= settings.team_member_limit:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Equipo con limite de miembros alcanzado"
+        )
 
 @router.post("/", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
 def register(
@@ -124,6 +134,7 @@ def join_team(
     Inscribe al usuario autenticado en un equipo, actualizando user.team_id.
     Si el equipo es privado, crea una solicitud de ingreso.
     """
+    check_team_user_limit(team_id)
     db_team = team_crud.get_team_by_id(db, team_id)
     if db_team.is_public:
         user_crud.assign_user_to_team(db, current_user, team_id, TeamRole.member)

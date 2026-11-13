@@ -9,6 +9,7 @@ from utils.auth import get_current_user
 from crud import team_request_crud, user_crud, team_crud
 from routers.notification import create_user_notification
 from enums.enum_types import TeamRole, Notification_Type
+from routers.team import check_team_user_limit
 
 router = APIRouter(
     prefix="/teamRequest",
@@ -27,7 +28,6 @@ def request_exists(db: Session, user_id: int, team_id: int):
 
 def verify_user_permission(user: models.Users):
     """Verifica si el usuario tiene permiso para aceptar o rechazar solicitudes"""
-
     if not user_crud.is_moderator(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -112,7 +112,8 @@ def accept_request(
 
     db_request = request_exists(db, user_id, current_user.user_team)
     verify_user_permission(current_user)
-
+    
+    check_team_user_limit(current_user.user_team)
     create_user_notification(db, current_user.user_team, Notification_Type.join_team_request_accepted, user_id)
 
     db_user = user_crud.get_user_by_id(db, db_request.user_id)

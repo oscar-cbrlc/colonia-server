@@ -105,7 +105,7 @@ def delete_user(db: Session, user_id: int) -> bool:
     db.commit()
     return True
 
-def get_all_team_users(db: Session, team_id: int, limit=25):
+def get_all_team_users(db: Session, team_id: int):
     """Retorna todos los usuarios pertenecientes a un equipo."""
     return (
         db.query(models.Users)
@@ -114,7 +114,6 @@ def get_all_team_users(db: Session, team_id: int, limit=25):
             models.Users.team_role.desc(),
             models.Users.user_name
         )
-        .limit(limit)
         .all()
     )
 
