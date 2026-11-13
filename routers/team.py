@@ -4,7 +4,7 @@ from database import get_db
 from schema.user_schema import UserResponse
 from schema.team_schema import TeamCreate, TeamResponse, TeamModelResponse, TeamUpdate, TeamStats
 from utils.auth import get_current_user
-from crud import team_crud, user_crud
+from crud import team_crud, user_crud, team_request_crud
 from typing import List
 from model import models
 from enums.enum_types import TeamRole, Notification_Type
@@ -120,8 +120,17 @@ def join_team(
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
-    """Inscribe al usuario autenticado en un equipo, actualizando user.team_id."""
-    user_crud.assign_user_to_team(db, current_user, team_id, TeamRole.member)
+    """
+    Inscribe al usuario autenticado en un equipo, actualizando user.team_id.
+    Si el equipo es privado, crea una solicitud de ingreso.
+    """
+    db_team = team_crud.get_team_by_id(db, team_id)
+    if db_team.is_public:
+        user_crud.assign_user_to_team(db, current_user, team_id, TeamRole.member)
+
+    else:
+        team_request_crud.create_request(db, current_user, team_id)
+
     return get_user_response(db, current_user)
 
 @router.patch("/me/leave", response_model=UserResponse)
