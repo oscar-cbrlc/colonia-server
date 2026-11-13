@@ -5,7 +5,6 @@ from utils.security import hash_password, verify_password
 from fastapi import HTTPException, status
 from enums.enum_types import TeamRole, UserType, Message_Type
 from crud.team_chat_crud import create_system_message
-from crud.notification_crud import create_notification
 
 def is_leader(db_user: models.Users):
     role_id = db_user.team_role

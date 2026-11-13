@@ -135,8 +135,8 @@ class Team(Base):
 
     territory: Mapped[list['Territory']] = relationship('Territory', back_populates='team')
     users: Mapped[list['Users']] = relationship('Users', back_populates='team')
-    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='team')
-    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='team')
+    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='team', passive_deletes=True)
+    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='team',  passive_deletes=True)
 
 
 class TeamRole(Base):
