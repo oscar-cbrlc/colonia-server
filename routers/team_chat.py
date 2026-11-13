@@ -68,13 +68,20 @@ def delete_message(
             detail="Mensaje no encontrado"
         )
 
-    if(db_message.message_type > Message_Type.user_message):
+    if current_user.user_team != db_message.team_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="No es posible eliminar un mensaje del sistema"
+            detail="No es posible eliminar mensajes del chat de otros equipos."
         )
+
+    if db_message.message_type > Message_Type.user_message:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No es posible eliminar un mensaje del sistema"
+            )
     
-    if (current_user.user_id != db_message.user_id and 
+    message_user = user_crud.get_user_by_id(db, db_message.user_id)
+    if (current_user.user_id != message_user.user_id and 
         current_user.team_role < TeamRole.leader):
 
         if(current_user.team_role < TeamRole.moderator):
@@ -83,7 +90,6 @@ def delete_message(
                 detail="Solo el lider y los moderadores de equipo pueden eliminar mensajes de otros usuarios."
             )
 
-        message_user = user_crud.get_user_by_id(db, db_message.user_id)
         if(message_user.team_role == TeamRole.moderator):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
