@@ -18,30 +18,13 @@ class UserUpdate(BaseModel):
     user_name: Optional[str] = None
     password: Optional[str] = None
 
-    total_distance: Optional[float] = None
-    total_time: Optional[float] = None
-    total_attack: Optional[int] = None
-    total_defence: Optional[int] = None
-    territories_captured: Optional[int] = None
-    
-    user_team: Optional[int] = None
-    team_role: Optional[int] = None
-    
-    avatar_head: Optional[int] = None
-    avatar_neck: Optional[int] = None
-    avatar_body: Optional[int] = None
-    avatar_footwear: Optional[int] = None
-    avatar_color: Optional[int] = None
-    
-    coin_amount: Optional[int] = None
-    user_thumbnail: Optional[str] = None
-
 class UserAvatarUpdate(BaseModel):
     avatar_head: Optional[int] = None
     avatar_neck: Optional[int] = None
     avatar_body: Optional[int] = None
     avatar_footwear: Optional[int] = None
     avatar_color: Optional[int] = None
+    user_thumbnail: Optional[str] = None
 
 class UserAvatarResponse(BaseModel):
     user_thumbnail: Optional[str] = None
