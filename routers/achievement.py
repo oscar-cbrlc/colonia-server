@@ -64,17 +64,6 @@ def update_achievement(
     result = achievement_crud.update_achievement(db, db_achievement, achievement_in)
     return build_achievement_response(result)
 
-@router.delete("/{achievement_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_achievement(
-        achievement_id: int,
-        _: models.Users = Depends(require_admin),
-        db: Session = Depends(get_db)
-    ):
-    """Elimina un logro. Requiere permisos de administrador."""
-    db_achievement = get_existing_achievement(achievement_id, db)
-    achievement_crud.delete_achievement(db, db_achievement.boost_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
 @router.get("/users/me/obtained", response_model=list[AchievementDetails])
 def get_my_achievements(
         current_user: models.Users = Depends(get_current_user),

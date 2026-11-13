@@ -54,28 +54,6 @@ def get_all_territories(limit: int | None = None, db: Session = Depends(get_db))
         for territory, team in results
     ]
 
-@router.patch("/", response_model=TerritoryResponse)
-def update_territory(territory_update: TerritoryUpdate,db: Session = Depends(get_db)):
-    """Actualiza datos de un territorio."""
-    territory_id = territory_update.territory_id
-    db_territory = territory_crud.get_territory_model_by_id(db,territory_id)
-
-    if not db_territory:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Territorio no encontrado"
-        )
-    
-    territory_crud.update_territory(db, db_territory, territory_update)
-    result = territory_crud.get_territory_by_id(db, territory_id)
-    db_territory, db_team = result
-
-    return {
-        "territory_id": db_territory.territory_id,
-        "health_points": db_territory.health_points,
-        "team": db_team
-    }
-
 @router.patch("/apply-points",response_model=TerritoryImpactResponse)
 def apply_territory_impact(
         impact_in: TerritoryListUpdate,
