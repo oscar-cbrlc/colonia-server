@@ -4,6 +4,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env.production
+   volumes:
+      - ./secrets/firebase-admin.json:/run/secrets/firebase-admin.json:ro
     depends_on:
       db:
         condition: service_healthy
