@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
+from schema.user_schema import UserAvatarResponse
 
 class TeamBase(BaseModel):
     team_name: str
@@ -24,6 +25,7 @@ class TeamMember(BaseModel):
     user_id: int
     user_name: str
     user_thumbnail: Optional[str] = None
+    avatar: UserAvatarResponse
     team_role: str
 
     model_config = ConfigDict(from_attributes=True)
