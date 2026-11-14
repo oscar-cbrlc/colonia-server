@@ -7,7 +7,6 @@ from crud import notification_crud, team_crud
 from typing import List
 from model import models
 from enums.enum_types import Notification_Type
-from utils.response_builder import build_notification_response
 
 router = APIRouter(
     prefix="/notification",
@@ -40,6 +39,7 @@ def get_all_my_notifications(
         db: Session = Depends(get_db)
     ):
     """Retorna la información de todos las notificaciones del usuario."""
+    from utils.response_builder import build_notification_response
 
     user_notifications = notification_crud.get_all_user_notifications(db, current_user.user_id)
     global_notifications = notification_crud.get_all_notificacions_by_type(db, Notification_Type.global_notification)

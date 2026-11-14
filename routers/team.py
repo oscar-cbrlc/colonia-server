@@ -4,12 +4,13 @@ from database import get_db
 from schema.user_schema import UserResponse
 from schema.team_schema import TeamCreate, TeamResponse, TeamModelResponse, TeamUpdate, TeamStats
 from utils.auth import get_current_user
-from crud import team_crud, user_crud
+from crud import team_crud, user_crud, team_request_crud
 from typing import List
 from model import models
 from enums.enum_types import TeamRole, Notification_Type
 from utils.response_builder import get_user_response, build_team_data
 from routers.notification import create_user_notification
+from config import settings
 
 router = APIRouter(
     prefix="/teams",
@@ -26,10 +27,19 @@ def user_in_team(db: Session, user_id: int, team_id: int):
         )
     if(user_db.user_team != team_id):
         raise HTTPException(
-            status_code=403,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuario no pertenece al equipo"
         )
     return user_db
+
+def check_team_user_limit(db: Session, team_id: int):
+    """Verifica si el equipo seleccionado ha alcanzado su limite de usuarios"""
+    team_users = user_crud.get_all_team_users(db, team_id)
+    if len(team_users) >= settings.team_member_limit:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Equipo con limite de miembros alcanzado"
+        )
 
 @router.post("/", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
 def register(
@@ -120,8 +130,18 @@ def join_team(
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
-    """Inscribe al usuario autenticado en un equipo, actualizando user.team_id."""
-    user_crud.assign_user_to_team(db, current_user, team_id, TeamRole.member)
+    """
+    Inscribe al usuario autenticado en un equipo, actualizando user.team_id.
+    Si el equipo es privado, crea una solicitud de ingreso.
+    """
+    check_team_user_limit(team_id)
+    db_team = team_crud.get_team_by_id(db, team_id)
+    if db_team.is_public:
+        user_crud.assign_user_to_team(db, current_user, team_id, TeamRole.member)
+
+    else:
+        team_request_crud.create_request(db, current_user, team_id)
+
     return get_user_response(db, current_user)
 
 @router.patch("/me/leave", response_model=UserResponse)

@@ -3,21 +3,40 @@ from sqlalchemy.orm import Session
 from database import get_db
 from typing import List
 from model import models
-from schema.team_request_schema import RequestCreate, UserRequestResponse, TeamRequestResponse
+from schema.team_request_schema import UserRequestResponse, TeamRequestResponse
 from schema.notification_schema import NotificationCreate
 from utils.auth import get_current_user
 from crud import team_request_crud, user_crud, team_crud
 from routers.notification import create_user_notification
 from enums.enum_types import TeamRole, Notification_Type
+from routers.team import check_team_user_limit
 
 router = APIRouter(
     prefix="/teamRequest",
     tags=["Solicitudes de Equipo"]
 )
 
+def request_exists(db: Session, user_id: int, team_id: int):
+    """Verifica si existe una solicitud para ingresar al equipo del id realizada por parte el usuario del id"""
+    db_request = team_request_crud.get_request_by_id(db, user_id, team_id)
+    if not db_request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Solicitud no encontrada"
+        )
+    return db_request
+
+def verify_user_permission(user: models.Users):
+    """Verifica si el usuario tiene permiso para aceptar o rechazar solicitudes"""
+    if not user_crud.is_moderator(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo los moderadores pueden realizar esta operación."
+        )
+    
 @router.post("/", response_model=UserRequestResponse, status_code=status.HTTP_201_CREATED)
 def register(
-        request_in: RequestCreate,
+        team_id: int,
         current_user: models.Users = Depends(get_current_user),
         db: Session = Depends(get_db)
     ):
@@ -30,8 +49,8 @@ def register(
             detail="El usuario ya pertenece a un equipo."
         )
     
-    db_request = team_request_crud.create_request(db, current_user, request_in)
-    db_team = team_crud.get_team_by_id(db,request_in.team_id)
+    db_request = team_request_crud.create_request(db, current_user, team_id)
+    db_team = team_crud.get_team_by_id(db, team_id)
 
     return {
         "request_timestamp": db_request.request_timestamp,
@@ -91,13 +110,10 @@ def accept_request(
     Elimina el resto de solicitudes del usuario.
     """
 
-    db_request = team_request_crud.get_request_by_id(db, user_id, current_user.user_team)
-    if not db_request:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Solicitud no encontrada"
-        )
-
+    db_request = request_exists(db, user_id, current_user.user_team)
+    verify_user_permission(current_user)
+    
+    check_team_user_limit(current_user.user_team)
     create_user_notification(db, current_user.user_team, Notification_Type.join_team_request_accepted, user_id)
 
     db_user = user_crud.get_user_by_id(db, db_request.user_id)
@@ -118,13 +134,9 @@ def reject_request(
     Rechaza una solicitud enviada al equipo dada su id.
     """  
 
-    db_request = team_request_crud.get_request_by_id(db, user_id, current_user.user_team)
-    if not db_request:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Solicitud no encontrada"
-        )
-    
+    db_request = request_exists(db, user_id, current_user.user_team)
+    verify_user_permission(current_user)
+
     create_user_notification(db, current_user.user_team, Notification_Type.join_team_request_denied, user_id)
 
     db_user = user_crud.get_user_by_id(db, db_request.user_id)
@@ -143,21 +155,7 @@ def delete_request(
     """
     Elimina solicitudes del usuario autenticado.
     """
-    db_request = team_request_crud.get_request_by_id(db, current_user.user_id, team_id)
-    
-    if not db_request:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Solicitud no encontrada"
-        )
-    
-    user_id = current_user.user_id
-    if (user_id != db_request.user_id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Solicitud no pertenece a usuario."
-        )
-    
-    team_request_crud.delete_request(db, current_user.user_id, team_id)
+    db_request = request_exists(db, current_user.user_id, team_id)
+    team_request_crud.delete_request(db, db_request.user_id, team_id)
     return
 

@@ -2,9 +2,6 @@ from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 
-class RequestCreate(BaseModel):
-    team_id: int
-
 class RequestTeamResponse(BaseModel):
     team_id: int
     team_name: str

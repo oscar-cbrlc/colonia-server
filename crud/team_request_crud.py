@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from model import models
-from schema.team_request_schema import RequestCreate
 from crud import user_crud
 from fastapi import HTTPException, status
 
@@ -49,12 +48,12 @@ def get_all_request_for_team(db: Session, current_user: models.Users):
         .all()
     )
 
-def create_request(db: Session, current_user: models.Users, request_in: RequestCreate):
+def create_request(db: Session, current_user: models.Users, team_id: int):
     """Crea una nueva solicitud en la base de datos"""
 
     db_request = models.TeamRequest(
         user_id = current_user.user_id,
-        team_id = request_in.team_id
+        team_id = team_id
     )
     db.add(db_request)
     db.commit()
