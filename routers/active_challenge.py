@@ -54,13 +54,13 @@ def list_events(db: Session = Depends(get_db)):
         for db_active_challenge in results
     ]
 
-@router.get("/{challenge_id}", response_model = ActiveChallengeResponse)
+@router.get("/{active_challenge_id}", response_model = ActiveChallengeResponse)
 def get_active_challenge(active_challenge_id: int, db: Session = Depends(get_db)):
     """Retorna un desafío activo por medio de su identificador."""
     db_active_challenge = get_existing_active_challenge(active_challenge_id, db)
     return build_active_challenge_response(db, db_active_challenge)
 
-@router.post("/{challenge_id}", response_model = ActiveChallengeResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model = ActiveChallengeResponse, status_code=status.HTTP_201_CREATED)
 def activate_challenge(
     active_challenge_in: ActiveChallengeCreate, 
     _: models.Users = Depends(require_admin), 
@@ -70,7 +70,7 @@ def activate_challenge(
     db_active_challenge = active_challenges_crud.create_active_challenge(db, active_challenge_in)
     return build_active_challenge_response(db, db_active_challenge)
 
-@router.patch("/{challenge_id}", response_model = ActiveChallengeResponse)
+@router.patch("/", response_model = ActiveChallengeResponse)
 def update_active_challenges(
         active_challenge_id: int,
         active_challenge_in: ActiveChallengeUpdate,
