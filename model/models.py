@@ -2,7 +2,7 @@ from typing import Optional
 import datetime
 import decimal
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKeyConstraint, Identity, Index, Integer, Numeric, PrimaryKeyConstraint, Table, Text, UniqueConstraint, text
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, ForeignKeyConstraint, Identity, Index, Integer, Numeric, PrimaryKeyConstraint, String, Table, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -129,14 +129,14 @@ class Team(Base):
 
     team_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
     team_name: Mapped[str] = mapped_column(Text, nullable=False)
-    team_color: Mapped[int] = mapped_column(Integer, nullable=False)
+    team_color: Mapped[int] = mapped_column(BigInteger, nullable=False)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'))
     team_description: Mapped[Optional[str]] = mapped_column(Text)
 
     territory: Mapped[list['Territory']] = relationship('Territory', back_populates='team')
     users: Mapped[list['Users']] = relationship('Users', back_populates='team')
-    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='team', passive_deletes=True)
-    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='team',  passive_deletes=True)
+    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='team')
+    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='team')
 
 
 class TeamRole(Base):
@@ -297,22 +297,23 @@ class Users(Base):
         ForeignKeyConstraint(['user_team'], ['team.team_id'], ondelete='SET NULL', onupdate='CASCADE', name='user_team_fk'),
         ForeignKeyConstraint(['user_type'], ['user_type.user_type_id'], ondelete='SET DEFAULT', onupdate='CASCADE', name='user_type_fk'),
         PrimaryKeyConstraint('user_id', name='users_pkey'),
-        UniqueConstraint('email', name='users_email_key')
+        UniqueConstraint('email', name='users_email_key'),
+        UniqueConstraint('firebase_uid', name='users_unique')
     )
 
     user_id: Mapped[int] = mapped_column(Integer, Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1), primary_key=True, autoincrement=True)
-    user_name: Mapped[str] = mapped_column(Text, nullable=False)
     email: Mapped[str] = mapped_column(Text, nullable=False)
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     total_distance: Mapped[decimal.Decimal] = mapped_column(Numeric, nullable=False, server_default=text('0'))
     total_time: Mapped[decimal.Decimal] = mapped_column(Numeric, nullable=False, server_default=text('0'))
     user_type: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
-    avatar_color: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('13398016'))
+    avatar_color: Mapped[int] = mapped_column(BigInteger, nullable=False, server_default=text('13398016'))
     coin_amount: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
     total_attack: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
     total_defence: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
     territories_captured: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
     user_exp: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    user_name: Mapped[Optional[str]] = mapped_column(Text)
     user_team: Mapped[Optional[int]] = mapped_column(Integer)
     team_role: Mapped[Optional[int]] = mapped_column(Integer)
     avatar_head: Mapped[Optional[int]] = mapped_column(Integer)
@@ -320,6 +321,7 @@ class Users(Base):
     avatar_body: Mapped[Optional[int]] = mapped_column(Integer)
     avatar_footwear: Mapped[Optional[int]] = mapped_column(Integer)
     user_thumbnail: Mapped[Optional[str]] = mapped_column(Text)
+    firebase_uid: Mapped[Optional[str]] = mapped_column(String)
 
     avatar_item: Mapped[Optional['AvatarItem']] = relationship('AvatarItem', foreign_keys=[avatar_body], back_populates='users_avatar_body')
     avatar_item_: Mapped[Optional['AvatarItem']] = relationship('AvatarItem', foreign_keys=[avatar_footwear], back_populates='users_avatar_footwear')
@@ -328,14 +330,14 @@ class Users(Base):
     team_role_: Mapped[Optional['TeamRole']] = relationship('TeamRole', back_populates='users')
     team: Mapped[Optional['Team']] = relationship('Team', back_populates='users')
     user_type_: Mapped['UserType'] = relationship('UserType', back_populates='users')
-    avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='user', passive_deletes=True)
-    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='user', passive_deletes=True)
-    notification: Mapped[list['Notification']] = relationship('Notification', back_populates='user', passive_deletes=True)
-    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user', passive_deletes=True)
-    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user', passive_deletes=True)
-    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user', passive_deletes=True)
-    user_session: Mapped[list['UserSession']] = relationship('UserSession', back_populates='user', passive_deletes=True)
-    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='user', passive_deletes=True)
+    avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='user')
+    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='user')
+    notification: Mapped[list['Notification']] = relationship('Notification', back_populates='user')
+    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user')
+    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user')
+    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user')
+    user_session: Mapped[list['UserSession']] = relationship('UserSession', back_populates='user')
+    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='user')
 
 
 class ActiveChallenges(Base):
@@ -351,7 +353,7 @@ class ActiveChallenges(Base):
     challenge_end_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False)
 
     challenge: Mapped['Challenge'] = relationship('Challenge', back_populates='active_challenges')
-    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='active_challenge', passive_deletes=True)
+    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='active_challenge')
 
 
 class AvatarInventory(Base):
@@ -460,8 +462,8 @@ class TeamChat(Base):
 class TeamRequest(Base):
     __tablename__ = 'team_request'
     __table_args__ = (
-        ForeignKeyConstraint(['team_id'], ['team.team_id'], ondelete='CASCADE', name='team_request_team_fk'),
-        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', name='team_request_user_fk'),
+        ForeignKeyConstraint(['team_id'], ['team.team_id'], ondelete='CASCADE', onupdate='CASCADE', name='team_request_team_fk'),
+        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='team_request_user_fk'),
         PrimaryKeyConstraint('user_id', 'team_id', name='team_request_id')
     )
 
