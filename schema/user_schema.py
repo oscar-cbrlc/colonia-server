@@ -5,7 +5,7 @@ from schema.avatar_item_schema import AvatarItemResponse
 
 class UserBase(BaseModel):
     email: EmailStr
-    user_name: str
+    #user_name: str
 
 class UserCreate(UserBase):
     password: str

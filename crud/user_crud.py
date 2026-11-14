@@ -1,6 +1,9 @@
+import secrets
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from model import models
-from schema.user_schema import UserCreate, UserUpdate, UserAvatarUpdate
+from schema.user_schema import UserUpdate, UserAvatarUpdate
 from utils.security import hash_password, verify_password
 from fastapi import HTTPException, status
 from enums.enum_types import TeamRole, UserType, Message_Type
@@ -48,20 +51,81 @@ def authenticate_user(db: Session, email: str, password: str):
         return None
     return db_user
 
-def create_user(db: Session, user_in: UserCreate):
-    """Crea un nuevo usuario en la base de datos aplicando hash a su contraseña."""
-    hashed_pwd = hash_password(user_in.password)
-    
+def resolve_firebase_user(db: Session, email: str, firebase_uid: str, create_if_missing: bool = False):
+    """Encuentra por Firebase UID, vincula un correo electrónico verificado coincidente o crea una cuenta."""
+    db_user = (
+        db.query(models.Users)
+        .filter(models.Users.firebase_uid == firebase_uid)
+        .first()
+    )
+
+    if db_user is not None:
+        email_owner = (
+            db.query(models.Users)
+            .filter(
+                func.lower(models.Users.email) == email,
+                models.Users.user_id != db_user.user_id,
+            )
+            .first()
+        )
+        if email_owner is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This Firebase email is already linked to another account.",
+            )
+        db_user.email = email
+        return _commit_firebase_user(db, db_user, created=False)
+
+    email_matches = (
+        db.query(models.Users)
+        .filter(func.lower(models.Users.email) == email)
+        .limit(2)
+        .all()
+    )
+    if len(email_matches) > 1:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Multiple local accounts use this email address.",
+        )
+    db_user = email_matches[0] if email_matches else None
+    if db_user is not None:
+        if db_user.firebase_uid and db_user.firebase_uid != firebase_uid:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This email is linked to a different Firebase account.",
+            )
+        db_user.firebase_uid = firebase_uid
+        db_user.email = email
+        return _commit_firebase_user(db, db_user, created=False)
+
+    if not create_if_missing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Account not found. Register before signing in.",
+        )
+
     db_user = models.Users(
-        email=user_in.email,
-        user_name=user_in.user_name,
-        password_hash=hashed_pwd,
-        user_type = UserType.player
+        email=email,
+        firebase_uid=firebase_uid,
+        user_name=create_default_username(),
+        password_hash=hash_password(secrets.token_urlsafe(48)),
+        user_type=UserType.player,
     )
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    return _commit_firebase_user(db, db_user, created=True)
+
+
+def _commit_firebase_user(db: Session, db_user: models.Users, created: bool):
+    try:
+        db.commit()
+        db.refresh(db_user)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email or Firebase identity already exists.",
+        ) from exc
+    return db_user, created
 
 def update_user(db: Session, db_user: models.Users, user_update: UserUpdate):
     """Actualiza la información del perfil del usuario."""
@@ -176,3 +240,7 @@ def demote_team_role(db: Session, db_user: models.Users):
 
     db.commit()
     db.refresh(db_user)
+
+def create_default_username():
+    """Crea un nombre de usuario por defecto"""
+    return f"Formicidae_{secrets.randbelow(9000) + 1000}"
