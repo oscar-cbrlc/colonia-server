@@ -16,6 +16,27 @@ def create_user_session(db: Session, session_in: UserSessionCreate):
     db.add(db_user_session)
     db.flush()
 
+
+def create_login_session(db: Session, user_id: int) -> dict:
+    """Crea una sesión de inicio de sesión para un usuario y devuelve los tokens de acceso y actualización."""
+    token_data = {"sub": str(user_id)}
+    access_token = create_access_token(token_data)
+    refresh_token, refresh_jti, refresh_expires_at = create_refresh_token(token_data)
+    create_user_session(
+        db,
+        UserSessionCreate(
+            user_id=user_id,
+            jti=refresh_jti,
+            expires_at=refresh_expires_at,
+        ),
+    )
+    db.commit()
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }
+
 def get_user_session_by_jti(db: Session, jti: str, user_id: int | None = None):
     """Obtiene una sesión de usuario por su jti."""
     query  = (

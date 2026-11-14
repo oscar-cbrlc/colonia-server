@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from database import get_db
-from schema.user_schema import UserCreate,UserUpdate, UserResponse, UserBaseResponse
+from schema.user_schema import UserLoginResponse, UserUpdate, UserResponse, UserBaseResponse
 from crud import user_crud
 from typing import List, Optional
+from crud.user_session_crud import create_login_session
 from utils.auth import get_current_user
+from utils.firebase_auth import get_firebase_identity
 from utils.response_builder import get_user_response, get_user_base_response
 from model import models
 
@@ -14,18 +16,22 @@ router = APIRouter(
     tags=["Perfil de Usuario"]
 )
 
-@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(user_in: UserCreate, db: Session = Depends(get_db)):
-    """Registra un nuevo usuario, validando que el correo no esté ya registrado"""
-    db_user = user_crud.get_user_by_email(db, email=user_in.email)
-    if db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Correo electrónico ya registrado"
-        )
-    
-    db_user = user_crud.create_user(db, user_in)
-    return get_user_response(db, db_user)
+@router.post("/", response_model=UserLoginResponse)
+def register(
+    response: Response,
+    firebase_identity: dict[str, str] = Depends(get_firebase_identity),
+    db: Session = Depends(get_db),
+):
+    """Creates or links a local account from a verified Firebase identity."""
+    db_user, created = user_crud.resolve_firebase_user(
+        db,
+        email=firebase_identity["email"],
+        firebase_uid=firebase_identity["uid"],
+        create_if_missing=True,
+    )
+    response.status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+    tokens = create_login_session(db, db_user.user_id)
+    return {**tokens, "user": get_user_response(db, db_user)}
 
 @router.get("/me", response_model=UserResponse)
 def get_current_user_data(
