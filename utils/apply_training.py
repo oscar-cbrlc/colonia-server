@@ -81,22 +81,6 @@ def apply_training_impact(
     total_attack_points = 0
     total_defence_points = 0
     territories_captured = 0
-
-    score_multiplier = 1
-    boost_id = impact_in.boost_id
-    
-    if(boost_id is not None):
-        db_boost = get_existing_boost(boost_id, db)
-        removed = remove_boost_from_inventory(db, current_user, boost_id)
-
-        if removed is False:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Potenciador no disponible en inventario",
-            )
-            
-        if(db_boost.boost_type == Boost_Type.score):
-            score_multiplier = db_boost.boost_effect
         
     try:
         # Bloquea al usuario
@@ -105,9 +89,33 @@ def apply_training_impact(
             .filter(
                 models.Users.user_id == current_user.user_id
             )
+            .populate_existing()
             .with_for_update()
             .one()
         )
+        
+        if locked_user.user_team is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El usuario no pertenece a ningún equipo."
+            )
+
+        # Procesar potenciador
+        score_multiplier = 1
+        boost_id = impact_in.boost_id
+        
+        if(boost_id is not None):
+            db_boost = get_existing_boost(boost_id, db)
+            removed = remove_boost_from_inventory(db, locked_user, boost_id)
+
+            if removed is False:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Potenciador no disponible en inventario",
+                )
+                
+            if(db_boost.boost_type == Boost_Type.score):
+                score_multiplier = db_boost.boost_effect
 
         # Orden fijo para reducir posibilidad de deadlocks
         territories = sorted(
@@ -192,8 +200,8 @@ def apply_training_impact(
 
         unlocked_achievements = check_achievements(db, locked_user)
         challenge_progress = get_challenge_metrics(impact_in, territories_captured)
-        progressed_challenges = check_challenges(db, current_user, challenge_progress)
-        training = give_training_xp(current_user, challenge_progress)
+        progressed_challenges = check_challenges(db, locked_user, challenge_progress)
+        training = give_training_xp(locked_user, challenge_progress)
         db.commit()
         
         achievements_results = [

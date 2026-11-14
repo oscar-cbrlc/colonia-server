@@ -117,12 +117,13 @@ def get_user_base_response(db: Session, db_user: models.Users):
         achievements = achievements
     )
 
-def build_team_member_response(user: models.Users):
+def build_team_member_response(db: Session, user: models.Users):
     """Obtiene datos de los miembros de un equipo."""
     return TeamMember(
         user_id = user.user_id,
         user_name = user.user_name,
         user_thumbnail = user.user_thumbnail,
+        avatar = build_avatar_response(db, user),
         team_role = TeamRole(user.team_role).name
     )
 
@@ -142,7 +143,7 @@ def build_team_data(db: Session, db_team: models.Team, details: bool = False):
         
         users = user_crud.get_all_team_users(db, db_team.team_id)
         data["members"] = [
-            build_team_member_response(user)
+            build_team_member_response(db, user)
             for user in users
         ]
     return data

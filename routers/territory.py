@@ -61,10 +61,4 @@ def apply_territory_impact(
         db: Session = Depends(get_db)
     ):
     """Aplica los puntos obtenidos durante una sesiónde entrenamiento a los territorios recorridos."""
-    if current_user.user_team is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El usuario no pertenece a ningún equipo."
-        )
-
     return apply_training_impact(db, current_user, impact_in)
