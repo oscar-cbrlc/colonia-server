@@ -7,7 +7,7 @@ from crud import user_training_crud
 from typing import List
 from uuid import UUID
 from utils.auth import get_current_user
-from utils.apply_training import apply_training_impact
+from utils.user_training_system import process_user_training
 from utils.response_builder import build_user_training_response
 
 router = APIRouter(
@@ -45,7 +45,7 @@ def process_training(
         db: Session = Depends(get_db)
     ):
     """Procesa y valida un entrenamiento del usuario autentificado."""
-    return apply_training_impact(db, current_user, impact_in)
+    return process_user_training(db, current_user, impact_in)
 
 
 

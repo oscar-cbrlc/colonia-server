@@ -481,8 +481,10 @@ def build_store_offer_response(db: Session, db_offer: models.StoreCatalog):
 
 def build_user_training_response(db: Session, db_training: models.UserTraining):
     """Construye el response para un entrenamiento de usuario"""
-    db_boost = boost_crud.get_boost_by_id(db, db_training.boost_id)
-    boost_data = build_boost_response(db_boost)
+    boost_data = None
+    if db_training.boost_id is not None:
+        db_boost = boost_crud.get_boost_by_id(db, db_training.boost_id)
+        boost_data = build_boost_response(db_boost)
 
     return UserTrainingResponse(
         user_id = db_training.user_id,

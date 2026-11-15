@@ -10,10 +10,10 @@ from schema.boost_schema import BoostResponse
 
 class UserTrainingBase(BaseModel):
     training_uuid: UUID
-    total_distance: int
-    total_time: int
+    training_distance: int
+    training_time: int
     territories: list[TerritoryBase]
-    timestamp: datetime
+    started_at: datetime
 
 class UserTrainingCreate(UserTrainingBase):
     boost_id: Optional[int] = None
@@ -45,6 +45,7 @@ class TrainingResult(BaseModel):
     user: UserStatsResult
     training: TrainingXPResult
     territories: list[TerritoryImpactResult]
+    boost: Optional[BoostResponse]
     achievements: Optional[list[AchievementResponse]] = None
     challenges: Optional[list[StartedChallengeResponse]] = None
 
@@ -60,7 +61,7 @@ class UserTrainingResponse(BaseModel):
     meters_run: int
     meters_bike: int
     captured_territories: int
-    boost: BoostResponse
+    boost: Optional[BoostResponse] = None
     training_attack: int
     training_defence: int
     started_at: datetime
