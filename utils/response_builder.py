@@ -50,6 +50,7 @@ from schema.notification_schema import NotificationResponse
 from schema.bundle_schema import BundleResponse
 from schema.item_bundle_schema import ItemBundleResponse
 from schema.store_offer_schema import StoreOfferResponse
+from schema.user_training_schema import UserTrainingResponse
 from utils.user_leveling_system import get_user_level
 from config import settings
 
@@ -476,4 +477,27 @@ def build_store_offer_response(db: Session, db_offer: models.StoreCatalog):
         offer_price = db_offer.offer_price,
         avatar_item = item_info,
         bundle = bundle_info
+    )
+
+def build_user_training_response(db: Session, db_training: models.UserTraining):
+    """Construye el response para un entrenamiento de usuario"""
+    db_boost = boost_crud.get_boost_by_id(db, db_training.boost_id)
+    boost_data = build_boost_response(db_boost)
+
+    return UserTrainingResponse(
+        user_id = db_training.user_id,
+        training_uuid = db_training.training_uuid,
+        training_distance = db_training.training_distance,
+        training_time = db_training.training_time,
+        seconds_walk = db_training.seconds_walk,
+        seconds_run = db_training.seconds_run,
+        seconds_bike = db_training.seconds_bike,
+        meters_walk = db_training.meters_walk,
+        meters_run = db_training.meters_run,
+        meters_bike = db_training.meters_bike,
+        captured_territories = db_training.captured_territories,
+        boost = boost_data,
+        training_attack = db_training.training_attack,
+        training_defence = db_training.training_defence,
+        started_at = db_training.started_at 
     )
