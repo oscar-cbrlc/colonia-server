@@ -10,7 +10,6 @@ from utils.auth import get_current_user
 from utils.apply_training import apply_training_impact
 from utils.response_builder import build_user_training_response
 
-
 router = APIRouter(
     prefix="/userTraining",
     tags=["Entrenamientos de Usuario"]
@@ -23,9 +22,10 @@ def get_all_my_trainings(
 ):
     """Retorna la información de todos los entrenamientos del usuario autentificado."""
     results = user_training_crud.get_user_trainings(db, current_user.user_id)
-
-    for db_training in results:
+    return[
         build_user_training_response(db, db_training)
+        for db_training in results
+    ]
     
 @router.get("/users/{user_id}/userTraining{training_uuid}", response_model=UserTrainingResponse)
 def get_training(user_id: int, training_uuid: UUID, db: Session = Depends(get_db)):
@@ -44,7 +44,7 @@ def process_training(
         current_user: models.Users = Depends(get_current_user),
         db: Session = Depends(get_db)
     ):
-    """Crea un entrenamiento de usuario."""
+    """Procesa y valida un entrenamiento del usuario autentificado."""
     return apply_training_impact(db, current_user, impact_in)
 
 

@@ -13,7 +13,7 @@ def get_training_by_id(db: Session, user_id: int, training_uuid: UUID):
         db.query(models.UserTraining)
         .filter(
             models.UserTraining.user_id == user_id,
-            models.UserTraining.training_uuid == training_uid
+            models.UserTraining.training_uuid == training_uuid
         )
         .first()
     )
