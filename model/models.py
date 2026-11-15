@@ -1,8 +1,9 @@
 from typing import Optional
 import datetime
 import decimal
+import uuid
 
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, ForeignKeyConstraint, Identity, Index, Integer, Numeric, PrimaryKeyConstraint, String, Table, Text, UniqueConstraint, text
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, ForeignKeyConstraint, Identity, Index, Integer, Numeric, PrimaryKeyConstraint, String, String, Table, Text, UniqueConstraint, Uuid, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -217,6 +218,7 @@ class Boost(Base):
     boost_type_: Mapped['BoostType'] = relationship('BoostType', back_populates='boost')
     boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='boost')
     challenge_boosts: Mapped[list['ChallengeBoosts']] = relationship('ChallengeBoosts', back_populates='boost')
+    user_training: Mapped[list['UserTraining']] = relationship('UserTraining', back_populates='boost')
 
 
 class Territory(Base):
@@ -330,14 +332,15 @@ class Users(Base):
     team_role_: Mapped[Optional['TeamRole']] = relationship('TeamRole', back_populates='users')
     team: Mapped[Optional['Team']] = relationship('Team', back_populates='users')
     user_type_: Mapped['UserType'] = relationship('UserType', back_populates='users')
-    avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='user')
-    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='user')
-    notification: Mapped[list['Notification']] = relationship('Notification', back_populates='user')
-    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user')
-    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user')
-    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user')
-    user_session: Mapped[list['UserSession']] = relationship('UserSession', back_populates='user')
-    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='user')
+    avatar_inventory: Mapped[list['AvatarInventory']] = relationship('AvatarInventory', back_populates='user', passive_deletes=True)
+    boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='user', passive_deletes=True)
+    notification: Mapped[list['Notification']] = relationship('Notification', back_populates='user', passive_deletes=True)
+    obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user', passive_deletes=True)
+    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user', passive_deletes=True)
+    team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user', passive_deletes=True)
+    user_session: Mapped[list['UserSession']] = relationship('UserSession', back_populates='user', passive_deletes=True)
+    user_training: Mapped[list['UserTraining']] = relationship('UserTraining', back_populates='user', passive_deletes=True)
+    started_challenges: Mapped[list['StartedChallenges']] = relationship('StartedChallenges', back_populates='user', passive_deletes=True)
 
 
 class ActiveChallenges(Base):
@@ -491,6 +494,36 @@ class UserSession(Base):
     revoked_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True))
 
     user: Mapped['Users'] = relationship('Users', back_populates='user_session')
+
+
+class UserTraining(Base):
+    __tablename__ = 'user_training'
+    __table_args__ = (
+        ForeignKeyConstraint(['boost_id'], ['boost.boost_id'], ondelete='SET NULL', onupdate='CASCADE', name='boost_id_fk'),
+        ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='user_id_fk'),
+        PrimaryKeyConstraint('user_id', 'training_uuid', name='user_training_pkey')
+    )
+
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    training_uuid: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    training_distance: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    training_time: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    seconds_walk: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    seconds_run: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    seconds_bike: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    meters_walk: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    meters_run: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    meters_bike: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    captured_territories: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    training_attack: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    training_defence: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0'))
+    started_at: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False)
+    payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    boost_id: Mapped[Optional[int]] = mapped_column(Integer)
+    processing_result: Mapped[Optional[dict]] = mapped_column(JSONB)
+
+    boost: Mapped[Optional['Boost']] = relationship('Boost', back_populates='user_training')
+    user: Mapped['Users'] = relationship('Users', back_populates='user_training')
 
 
 class StartedChallenges(Base):

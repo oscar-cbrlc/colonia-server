@@ -2,7 +2,7 @@ from model import models
 from math import ceil, floor
 from config import settings
 from schema.challenge_schema import Challenge_metrics
-from schema.territory_schema import TrainingResult
+from schema.user_training_schema import TrainingXPResult
 
 exp_base = settings.exp_level_base
 
@@ -43,10 +43,9 @@ def give_training_xp(current_user: models.Users, training_progress: Challenge_me
     training_xp = time_xp + distance_xp + territories_xp
     give_user_xp(current_user, training_xp)
 
-    return TrainingResult(
+    return TrainingXPResult(
         time_xp = time_xp,
         distance_xp = distance_xp,
         territories_xp = territories_xp,
         total_xp = training_xp
     )
-

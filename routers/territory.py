@@ -1,16 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from schema.territory_schema import (
-    TerritoryUpdate, 
-    TerritoryResponse, 
-    TerritoryListUpdate,
-    TerritoryImpactResponse
-)
+from schema.territory_schema import TerritoryUpdate, TerritoryResponse
 from crud import territory_crud
 from typing import List
-from utils.auth import get_current_user
-from utils.apply_training import apply_training_impact
 from model import models
 
 router = APIRouter(
@@ -53,12 +46,3 @@ def get_all_territories(limit: int | None = None, db: Session = Depends(get_db))
         }
         for territory, team in results
     ]
-
-@router.patch("/apply-points",response_model=TerritoryImpactResponse)
-def apply_territory_impact(
-        impact_in: TerritoryListUpdate,
-        current_user: models.Users = Depends(get_current_user),
-        db: Session = Depends(get_db)
-    ):
-    """Aplica los puntos obtenidos durante una sesiónde entrenamiento a los territorios recorridos."""
-    return apply_training_impact(db, current_user, impact_in)
