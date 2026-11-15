@@ -15,7 +15,8 @@ from routers import (
     active_challenge, 
     avatar, 
     notification,
-    store_catalog
+    store_catalog,
+    user_training
 )
 from middleware import APIKeyMiddleware
 
@@ -33,6 +34,7 @@ app.include_router(team.router)
 app.include_router(admin.router)
 app.include_router(boosts.router)
 app.include_router(territory.router)
+app.include_router(user_training.router)
 app.include_router(team_request.router)
 app.include_router(team_chat.router)
 app.include_router(achievement.router)

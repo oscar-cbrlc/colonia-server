@@ -1,30 +1,49 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from model import models
-from schema.territory_schema import (
-    TerritoryCreate,
-    TerritoryOwnerResponse,
-    UserImpactResult,
-    TerritoryListUpdate,
-    TerritoryImpactResult,
-    TerritoryImpactResponse,
-    TrainingResult
-)
+from schema.territory_schema import TerritoryCreate, TerritoryOwnerResponse, TerritoryImpactResult
+from schema.user_training_schema import UserStatsResult, UserTrainingCreate, TrainingResult
 from schema.challenge_schema import Challenge_metrics
 from crud.territory_crud import create_territory, get_locked_territory
-from routers.boosts import get_existing_boost
+from crud.user_training_crud import create_training, get_training_by_id, update_training_results
 from crud.boost_inventory_crud import remove_boost_from_inventory
-from decimal import Decimal, ROUND_HALF_UP
-from config import settings
+from routers.boosts import get_existing_boost
 from utils.achievement_tracker import check_achievements
-from utils.response_builder import build_achievement_response, build_started_challenge_response
+from utils.response_builder import build_achievement_response, build_started_challenge_response, build_boost_response
 from utils.challenge_tracker import check_challenges
 from utils.user_leveling_system import give_training_xp
 from enums.enum_types import Boost_Type
+from decimal import Decimal, ROUND_HALF_UP
+from config import settings
+import hashlib
+import json
 import traceback
 
+def generate_training_hash(training_in: UserTrainingCreate) -> str:
+    """Genera un hash usando la información de un entrenamiento"""
+    payload = training_in.model_dump(
+        mode="json",
+        exclude={"training_uuid"}
+    )
 
-def apply_points(territory: models.Territory, user_team: int, points: Decimal) -> str:
+    # Ordenar territorios para mantener un hash consistente
+    payload["territories"] = sorted(
+        payload["territories"],
+        key=lambda x: x["territory_id"]
+    )
+
+    normalized = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False
+    )
+
+    return hashlib.sha256(
+        normalized.encode("utf-8")
+    ).hexdigest()
+
+def apply_points_to_territory(territory: models.Territory, user_team: int, points: Decimal) -> str:
     """Determina la acción realizada sobre el territorio y se realizan calculos de puntaje"""
     current_health = Decimal(territory.health_points or 0)
 
@@ -49,41 +68,44 @@ def apply_points(territory: models.Territory, user_team: int, points: Decimal) -
 def round_points(points: Decimal) -> Decimal:
     return points.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
-def get_challenge_metrics(impact_progress: TerritoryListUpdate, territories_captured: int) -> Challenge_metrics:
+def get_challenge_metrics(training_in: UserTrainingCreate, territories_captured: int) -> Challenge_metrics:
     """Obtiene datos de todas las métricas de progreso para los desafíos"""
 
     territories_list = set()
-    for territory in impact_progress.territories:
+    for territory in training_in.territories:
         territory_id = territory.territory_id
         territories_list.add(territory_id)
 
     return Challenge_metrics(
-        total_time = impact_progress.total_time,
-        walk_time = impact_progress.seconds_walk,
-        run_time = impact_progress.seconds_run,
-        bike_time = impact_progress.seconds_bike,
-        total_distance = impact_progress.total_distance,
-        walk_distance = impact_progress.meters_walk,
-        run_distance = impact_progress.meters_run,
-        bike_distance = impact_progress.meters_bike,
+        total_time = training_in.training_time,
+        walk_time = training_in.seconds_walk,
+        run_time = training_in.seconds_run,
+        bike_time = training_in.seconds_bike,
+        total_distance = training_in.training_distance,
+        walk_distance = training_in.meters_walk,
+        run_distance = training_in.meters_run,
+        bike_distance = training_in.meters_bike,
         captured_territories = territories_captured,
         traversed_territories = territories_list
     )
 
-def apply_training_impact(
+def process_user_training(
         db: Session,
         current_user: models.Users,
-        impact_in: TerritoryListUpdate
-    ) -> TerritoryImpactResponse:
-    
-    """Aplica un paquete de entrenamiento completo en una sola transaccion."""
+        user_training_in: UserTrainingCreate
+    ) -> TrainingResult:
+    """
+    Procesa el entrenamiento de un usuario en una sola transaccion.
+    Realiza cambios a territorios afectados durante el entrenamiento.
+    Incrementa estadisticas del usuario y verifica su progreso en desafiós y logros.
+    """
     territory_results: list[TerritoryImpactResult] = []
-    total_attack_points = 0
-    total_defence_points = 0
+    training_attack_points = 0
+    training_defence_points = 0
     territories_captured = 0
         
     try:
-        # Bloquea al usuario
+        # Bloquear al usuario
         locked_user = (
             db.query(models.Users)
             .filter(
@@ -93,17 +115,57 @@ def apply_training_impact(
             .with_for_update()
             .one()
         )
-        
+
         if locked_user.user_team is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El usuario no pertenece a ningún equipo."
             )
 
-        # Procesar potenciador
+        # Insertar datos iniciales del entrenamiento
+        training_hash = generate_training_hash(user_training_in)
+        inserted_uuid = create_training(
+            db,
+            {
+                "user_id": locked_user.user_id,
+                "training_uuid": user_training_in.training_uuid,
+                "training_distance": user_training_in.training_distance,
+                "training_time": user_training_in.training_time,
+                "started_at": user_training_in.started_at,
+                "boost_id": user_training_in.boost_id,
+                "seconds_walk": user_training_in.seconds_walk,
+                "seconds_run": user_training_in.seconds_run,
+                "seconds_bike": user_training_in.seconds_bike,
+                "meters_walk": user_training_in.meters_walk,
+                "meters_run": user_training_in.meters_run,
+                "meters_bike": user_training_in.meters_bike,
+                "payload_hash": training_hash,
+            }
+        )
+
+        # Verificar si el entrenamiento actual no ha sido registrado anteriormente
+        if inserted_uuid is None:
+            existing_training = get_training_by_id(db, locked_user.user_id, user_training_in.training_uuid)
+            if existing_training.payload_hash != training_hash:
+                raise HTTPException(
+                    status_code=409,
+                    detail="El entrenamiento ya existe con datos diferentes."
+                )
+
+            if existing_training.processing_result is None:
+                raise HTTPException(
+                    status_code=500,
+                    detail="El entrenamiento existente no tiene un resultado almacenado."
+                )
+            
+            previous_result = existing_training.processing_result
+            db.rollback()
+            return TrainingResult.model_validate(previous_result)
+
+        # Procesar uso de potenciadores
         score_multiplier = 1
-        boost_id = impact_in.boost_id
-        
+        boost_id = user_training_in.boost_id
+        boost_data = None
         if(boost_id is not None):
             db_boost = get_existing_boost(boost_id, db)
             removed = remove_boost_from_inventory(db, locked_user, boost_id)
@@ -113,13 +175,14 @@ def apply_training_impact(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Potenciador no disponible en inventario",
                 )
-                
+            
+            boost_data = build_boost_response(db_boost)
             if(db_boost.boost_type == Boost_Type.score):
                 score_multiplier = db_boost.boost_effect
 
-        # Orden fijo para reducir posibilidad de deadlocks
+        # Procesar territorios afectados, orden fijo para reducir posibilidad de deadlocks
         territories = sorted(
-            impact_in.territories,
+            user_training_in.territories,
             key=lambda x: x.territory_id
         )
 
@@ -133,16 +196,16 @@ def apply_training_impact(
                 territory = create_territory(db, new_territory)
 
             points = round_points(territory_input.points) * score_multiplier
-            action = apply_points(territory, locked_user.user_team, points)
+            action = apply_points_to_territory(territory, locked_user.user_team, points)
 
             match action:
                 case "defend":
-                    total_defence_points += points
+                    training_defence_points += points
                 case "attack":
-                    total_attack_points += points
+                    training_attack_points += points
                 case "capture":
                     territories_captured += 1
-                    total_attack_points += points
+                    training_attack_points += points
 
             # Obtener información del equipo
             team = None
@@ -173,36 +236,36 @@ def apply_training_impact(
                 )
             )
 
-        # Actualiza estadísticas del usuario
+        # Actualizar estadísticas del usuario
         locked_user.total_distance = (
             Decimal(locked_user.total_distance or 0)
-            + impact_in.total_distance
+            + user_training_in.training_distance
         )
 
         locked_user.total_time = (
             int(locked_user.total_time or 0)
-            + impact_in.total_time
+            + user_training_in.training_time
         )
 
         locked_user.total_attack = (
             int(locked_user.total_attack or 0)
-            + total_attack_points
+            + training_attack_points
         )
 
         locked_user.total_defence = (
             int(locked_user.total_defence or 0)
-            + total_defence_points
+            + training_defence_points
         )
         locked_user.territories_captured = (
             int(locked_user.territories_captured or 0)
             + territories_captured
         )
 
+        # Procesos de verificación de progreso en logros y desafiós
         unlocked_achievements = check_achievements(db, locked_user)
-        challenge_progress = get_challenge_metrics(impact_in, territories_captured)
+        challenge_progress = get_challenge_metrics(user_training_in, territories_captured)
         progressed_challenges = check_challenges(db, locked_user, challenge_progress)
         training = give_training_xp(locked_user, challenge_progress)
-        db.commit()
         
         achievements_results = [
             build_achievement_response(achievement)
@@ -214,8 +277,9 @@ def apply_training_impact(
             for db_started_challenge in progressed_challenges
         ]
 
-        return TerritoryImpactResponse(
-            user = UserImpactResult(
+        response = TrainingResult(
+            training_uuid = user_training_in.training_uuid,
+            user = UserStatsResult(
                 user_id = locked_user.user_id,
                 user_name = locked_user.user_name,
                 total_distance = locked_user.total_distance,
@@ -226,9 +290,23 @@ def apply_training_impact(
             ),
             training = training,
             territories = territory_results,
+            boost = boost_data,
             achievements = achievements_results,
             challenges = challenges_results
         )
+
+        # Actualiza campos calculados para el entrenamiento registrado
+        db_training = get_training_by_id(db, locked_user.user_id, user_training_in.training_uuid)
+        update_training_results(
+            db_training,
+            captured_territories = territories_captured,
+            training_attack = training_attack_points,
+            training_defence = training_defence_points,
+            processing_result=response.model_dump(mode="json")
+        )
+
+        db.commit()
+        return response
 
     except Exception as Error:
         db.rollback()
