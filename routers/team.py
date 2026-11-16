@@ -5,9 +5,10 @@ from schema.user_schema import UserResponse
 from schema.team_schema import TeamCreate, TeamResponse, TeamModelResponse, TeamUpdate, TeamStats
 from utils.auth import get_current_user
 from crud import team_crud, user_crud, team_request_crud
+from crud.team_chat_crud import create_system_message, create_user_message
 from typing import List
 from model import models
-from enums.enum_types import TeamRole, Notification_Type
+from enums.enum_types import TeamRole, Notification_Type, Message_Type
 from utils.response_builder import get_user_response, build_team_data
 from routers.notification import create_user_notification
 from config import settings
@@ -131,26 +132,37 @@ def join_team(
         db: Session = Depends(get_db)
     ):
     """
-    Inscribe al usuario autenticado en un equipo, actualizando user.team_id.
-    Si el equipo es privado, crea una solicitud de ingreso.
+    Inscribe al usuario autenticado en un equipo, actualizando user.team_id
+    Si el equipo es privado, crea una solicitud de ingreso
+    Crea un mensaje de chat para informar la incorporación del usuario
     """
-    check_team_user_limit(team_id)
-    db_team = team_crud.get_team_by_id(db, team_id)
-    if db_team.is_public:
-        user_crud.assign_user_to_team(db, current_user, team_id, TeamRole.member)
-
-    else:
-        team_request_crud.create_request(db, current_user, team_id)
-
-    return get_user_response(db, current_user)
+    try:
+        check_team_user_limit(team_id)
+        db_team = team_crud.get_team_by_id(db, team_id)
+        if db_team.is_public:
+            create_system_message(db, current_user.user_id, team_id, None, Message_Type.team_join)
+            user_crud.assign_user_to_team(db, current_user, team_id, TeamRole.member)
+        else:
+            team_request_crud.create_request(db, current_user, team_id)
+        
+        return get_user_response(db, current_user)
+    
+    except Exception:
+        db.rollback()
+        raise
 
 @router.patch("/me/leave", response_model=UserResponse)
 def leave_team(
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
-    """Elimina al usuario autenticado de su equipo, actualizando user.user_team en Null"""
-    user_crud.remove_user_from_team(db, current_user, is_kick=False)
+    """
+    Elimina al usuario autenticado de su equipo, actualizando user.user_team en Null
+    Crea un mensaje de chat para informar de la salida del usuario
+    """
+    create_system_message(db, current_user.user_id, current_user.user_team, None, Message_Type.team_exit)
+    user_crud.remove_user_from_team(db, current_user)
+
     return get_user_response(db, current_user)
 
 @router.patch("/members/{user_id}/kick", response_model=TeamResponse)
@@ -159,7 +171,11 @@ def kick_from_team(
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
-    """Elimina al usuario seleccionado de su equipo, actualizando user.user_team en Null."""
+    """
+    Elimina al usuario seleccionado de su equipo, actualizando user.user_team en Null.
+    Crea una notificación al usuario para informarle de su expulsión.
+    Crea un mensaje de chat para informar de la expulsión del usuario
+    """
     if not user_crud.is_moderator(current_user):
         raise HTTPException(
             status_code=403,
@@ -168,9 +184,11 @@ def kick_from_team(
     
     user_db = user_in_team(db, user_id, current_user.user_team)
     create_user_notification(db, current_user.user_team, Notification_Type.team_kick, user_id)
+    
+    create_system_message(db, user_id, current_user.user_team, current_user.user_id, Message_Type.team_kick)
     user_crud.remove_user_from_team(db, user_db, is_kick=True)
-
     db_team = team_crud.get_team_by_id(db, current_user.user_team)
+
     return build_team_data(db, db_team, details= True)
 
 @router.patch("/members/{user_id}/promote", response_model=TeamResponse)
@@ -179,13 +197,18 @@ def promote_member(
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
-    """Promueve el rol de equipo de un usuario, dado su id."""
+    """
+    Promueve el rol de equipo de un usuario, dado su id.
+    Crea un mensaje de chat para informar de la promoción del usuario.
+    """
     if not user_crud.is_leader(current_user):
         raise HTTPException(
             status_code=403,
             detail="Solo el lider pueden realizar esta acción"
         )
     user_db = user_in_team(db, user_id, current_user.user_team)
+
+    create_system_message(db, user_id, current_user.user_team, current_user.user_id, Message_Type.team_promote)
     user_crud.promote_team_role(db, current_user, user_db)
 
     db_team = team_crud.get_team_by_id(db, current_user.user_team)
@@ -197,13 +220,18 @@ def demote_member(
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
-    """Denigra el rol de equipo de un usuario, dado su id."""
+    """
+    Denigra el rol de equipo de un usuario, dado su id.
+    Crea un mensaje de chat para informar de la denigración del usuario.
+    """
     if not user_crud.is_leader(current_user):
         raise HTTPException(
             status_code=403,
             detail="Solo el lider pueden realizar esta acción"
         )
     user_db = user_in_team(db, user_id, current_user.user_team)
+
+    create_system_message(db, user_id, current_user.user_team, current_user.user_id, Message_Type.team_demote)
     user_crud.demote_team_role(db, user_db)
 
     db_team = team_crud.get_team_by_id(db, current_user.user_team)

@@ -49,6 +49,9 @@ class Message_Type(IntEnum):
     team_join = 2
     team_exit = 3
     team_kick = 4
+    team_accept = 5
+    team_promote = 6
+    team_demote = 7
 
 class Boost_Type(IntEnum):
     score = 1

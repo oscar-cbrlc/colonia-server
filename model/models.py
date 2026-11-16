@@ -336,7 +336,8 @@ class Users(Base):
     boost_inventory: Mapped[list['BoostInventory']] = relationship('BoostInventory', back_populates='user', passive_deletes=True)
     notification: Mapped[list['Notification']] = relationship('Notification', back_populates='user', passive_deletes=True)
     obtained_achievements: Mapped[list['ObtainedAchievements']] = relationship('ObtainedAchievements', back_populates='user', passive_deletes=True)
-    team_chat: Mapped[list['TeamChat']] = relationship('TeamChat', back_populates='user', passive_deletes=True)
+    team_chat_triggered_by: Mapped[list['TeamChat']] = relationship('TeamChat', foreign_keys='[TeamChat.triggered_by]', back_populates='users')
+    team_chat_user: Mapped[list['TeamChat']] = relationship('TeamChat', foreign_keys='[TeamChat.user_id]', back_populates='user', passive_deletes=True)
     team_request: Mapped[list['TeamRequest']] = relationship('TeamRequest', back_populates='user', passive_deletes=True)
     user_session: Mapped[list['UserSession']] = relationship('UserSession', back_populates='user', passive_deletes=True)
     user_training: Mapped[list['UserTraining']] = relationship('UserTraining', back_populates='user', passive_deletes=True)
@@ -446,6 +447,7 @@ class TeamChat(Base):
     __table_args__ = (
         ForeignKeyConstraint(['message_type'], ['chat_message_type.message_type_id'], ondelete='CASCADE', onupdate='CASCADE', name='message_type_fk'),
         ForeignKeyConstraint(['team_id'], ['team.team_id'], ondelete='CASCADE', onupdate='CASCADE', name='team_chat_fk'),
+        ForeignKeyConstraint(['triggered_by'], ['users.user_id'], ondelete='SET NULL', onupdate='CASCADE', name='user_trigger_fk'),
         ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE', onupdate='CASCADE', name='user_team_chat_fk'),
         PrimaryKeyConstraint('message_id', name='team_chat_pkey')
     )
@@ -456,10 +458,12 @@ class TeamChat(Base):
     message_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     message_type: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1'))
     user_id: Mapped[Optional[int]] = mapped_column(Integer)
+    triggered_by: Mapped[Optional[int]] = mapped_column(Integer)
 
     chat_message_type: Mapped['ChatMessageType'] = relationship('ChatMessageType', back_populates='team_chat')
     team: Mapped['Team'] = relationship('Team', back_populates='team_chat')
-    user: Mapped[Optional['Users']] = relationship('Users', back_populates='team_chat')
+    users: Mapped[Optional['Users']] = relationship('Users', foreign_keys=[triggered_by], back_populates='team_chat_triggered_by')
+    user: Mapped[Optional['Users']] = relationship('Users', foreign_keys=[user_id], back_populates='team_chat_user')
 
 
 class TeamRequest(Base):

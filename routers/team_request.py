@@ -7,9 +7,10 @@ from schema.team_request_schema import UserRequestResponse, TeamRequestResponse
 from schema.notification_schema import NotificationCreate
 from utils.auth import get_current_user
 from crud import team_request_crud, user_crud, team_crud
+from crud.team_chat_crud import create_system_message
 from routers.notification import create_user_notification
-from enums.enum_types import TeamRole, Notification_Type
 from routers.team import check_team_user_limit
+from enums.enum_types import TeamRole, Notification_Type, Message_Type
 
 router = APIRouter(
     prefix="/teamRequest",
@@ -108,21 +109,28 @@ def accept_request(
     """
     Acepta una solicitud enviada al equipo dada su id.
     Elimina el resto de solicitudes del usuario.
+    Crea un mensaje de chat para informar de la aceptación del usuario al equipo.
     """
+    try:
+        db_request = request_exists(db, user_id, current_user.user_team)
+        verify_user_permission(current_user)
+        
+        check_team_user_limit(current_user.user_team)
+        create_user_notification(db, current_user.user_team, Notification_Type.join_team_request_accepted, user_id)
+        create_system_message(db, user_id, current_user.user_team, current_user.user_id, Message_Type.team_accept)
 
-    db_request = request_exists(db, user_id, current_user.user_team)
-    verify_user_permission(current_user)
-    
-    check_team_user_limit(current_user.user_team)
-    create_user_notification(db, current_user.user_team, Notification_Type.join_team_request_accepted, user_id)
-
-    db_user = user_crud.get_user_by_id(db, db_request.user_id)
-    user_crud.assign_user_to_team(db, db_user, current_user.user_team, TeamRole.member)
-    team_request_crud.delete_all_requests_by_user(db, db_request.user_id)
-    return {
+        db_user = user_crud.get_user_by_id(db, db_request.user_id)
+        user_crud.assign_user_to_team(db, db_user, current_user.user_team, TeamRole.member)
+        team_request_crud.delete_all_requests_by_user(db, db_request.user_id)
+        
+        return {
             "request_timestamp": db_request.request_timestamp,
             "user": db_user
         }
+    
+    except Exception:
+        db.rollback()
+        raise
 
 @router.patch("/{user_id}/reject", response_model=TeamRequestResponse)
 def reject_request(
@@ -130,9 +138,7 @@ def reject_request(
         current_user: models.Users = Depends(get_current_user), 
         db: Session = Depends(get_db)
     ):
-    """
-    Rechaza una solicitud enviada al equipo dada su id.
-    """  
+    """Rechaza una solicitud enviada al equipo dada su id."""  
 
     db_request = request_exists(db, user_id, current_user.user_team)
     verify_user_permission(current_user)
@@ -142,9 +148,9 @@ def reject_request(
     db_user = user_crud.get_user_by_id(db, db_request.user_id)
     team_request_crud.delete_request(db, user_id, current_user.user_team)
     return {
-            "request_timestamp": db_request.request_timestamp,
-            "user": db_user
-        }
+        "request_timestamp": db_request.request_timestamp,
+        "user": db_user
+    }
 
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
 def delete_request(
@@ -152,9 +158,7 @@ def delete_request(
         current_user: models.Users = Depends(get_current_user),  
         db: Session = Depends(get_db)
     ):
-    """
-    Elimina solicitudes del usuario autenticado.
-    """
+    """Elimina solicitudes del usuario autenticado."""
     db_request = request_exists(db, current_user.user_id, team_id)
     team_request_crud.delete_request(db, db_request.user_id, team_id)
     return

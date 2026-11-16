@@ -6,8 +6,7 @@ from model import models
 from schema.user_schema import UserUpdate, UserAvatarUpdate
 from utils.security import hash_password, verify_password
 from fastapi import HTTPException, status
-from enums.enum_types import TeamRole, UserType, Message_Type
-from crud.team_chat_crud import create_system_message
+from enums.enum_types import TeamRole, UserType
 
 def is_leader(db_user: models.Users):
     role_id = db_user.team_role
@@ -197,25 +196,17 @@ def assign_user_to_team(db: Session, db_user: models.Users, team_id: int, team_r
     db_user.user_team = team_id
     db_user.team_role = team_role
 
-    db_message = create_system_message(db, db_user, Message_Type.team_join)
     db.commit()
     db.refresh(db_user)
-    db.refresh(db_message)
     return db_user
 
-def remove_user_from_team(db: Session, db_user: models.Users, is_kick: bool):
+def remove_user_from_team(db: Session, db_user: models.Users):
     """Remueve el equipo y rol de equipo del usuario."""
-    remove_reason = Message_Type.team_exit
-    if is_kick:
-        remove_reason = Message_Type.team_kick
-        
-    db_message = create_system_message(db, db_user, remove_reason)
     db_user.user_team = None
     db_user.team_role = None
     
     db.commit()
     db.refresh(db_user)
-    db.refresh(db_message)
     return db_user
 
 def promote_team_role(db: Session, team_leader: models.Users, db_user: models.Users):
