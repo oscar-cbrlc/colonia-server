@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     territories_xp: int = 500
 
     model_url: str | None = None
+
+    chat_encryption_key_id: str = Field(alias="CHAT_ENCRYPTION_KEY_ID")
+    chat_encryption_key: str = Field(alias="CHAT_ENCRYPTION_KEY")
+    
     model_config = SettingsConfigDict(env_file=".env", extra='ignore')
 
 settings = Settings()

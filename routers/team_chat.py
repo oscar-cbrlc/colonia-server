@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from schema.team_chat_schema import MessageCreate, MessageResponse
+from schema.team_chat_schema import MessageResponse
 from utils.auth import get_current_user
 from crud import team_chat_crud, user_crud
 from typing import List
@@ -16,7 +16,7 @@ router = APIRouter(
 
 @router.post("/", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
 def register(
-        message_in: MessageCreate,
+        message_in: str,
         current_user: models.Users = Depends(get_current_user),
         db: Session = Depends(get_db)
     ):
@@ -60,40 +60,45 @@ def delete_message(
     El usuario autentificado unicamente puede eliminar sus propios mensajes.
     Usuarios de equipo del tipo moderador pueden eliminar mensajes de otros usuarios.
     """
-    db_message = team_chat_crud.get_message_by_id(db, message_id)
-    
-    if not db_message:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Mensaje no encontrado"
-        )
-
-    if current_user.user_team != db_message.team_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No es posible eliminar mensajes del chat de otros equipos."
-        )
-
-    if db_message.message_type > Message_Type.user_message:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No es posible eliminar un mensaje del sistema"
-            )
-    
-    message_user = user_crud.get_user_by_id(db, db_message.user_id)
-    if (current_user.user_id != message_user.user_id and 
-        current_user.team_role < TeamRole.leader):
-
-        if(current_user.team_role < TeamRole.moderator):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Solo el lider y los moderadores de equipo pueden eliminar mensajes de otros usuarios."
-            )
-
-        if(message_user.team_role == TeamRole.moderator):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Solo el lider del equipo puede eliminar mensajes de otros moderadores."
-            )
+    try:
+        db_message = team_chat_crud.get_message_by_id(db, message_id)
         
-    team_chat_crud.delete_message(db, message_id)
+        if not db_message:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Mensaje no encontrado"
+            )
+
+        if current_user.user_team != db_message.team_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No es posible eliminar mensajes del chat de otros equipos."
+            )
+
+        if db_message.message_type > Message_Type.user_message:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No es posible eliminar un mensaje del sistema"
+                )
+        
+        message_user = user_crud.get_user_by_id(db, db_message.user_id)
+        if (current_user.user_id != message_user.user_id and 
+            current_user.team_role < TeamRole.leader):
+
+            if(current_user.team_role < TeamRole.moderator):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Solo el lider y los moderadores de equipo pueden eliminar mensajes de otros usuarios."
+                )
+
+            if(message_user.team_role == TeamRole.moderator):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Solo el lider del equipo puede eliminar mensajes de otros moderadores."
+                )
+            
+        team_chat_crud.delete_message(db, message_id)
+
+    except Exception:
+        db.rollback()
+        raise

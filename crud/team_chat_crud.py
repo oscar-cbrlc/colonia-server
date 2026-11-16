@@ -1,30 +1,54 @@
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from model import models
-from schema.team_chat_schema import MessageCreate
-from fastapi import HTTPException, status
 from enums.enum_types import Message_Type
+from utils.message_encryption_system import encrypt_message
 
-def create_user_message(db: Session, current_user: models.Users, message_in: MessageCreate):
+def create_user_message(db: Session, current_user: models.Users, message_in: str):
     """Crea un nuevo mensaje de chat en la base de datos por parte del usuario"""
+    
+    encrypted_msg = encrypt_message(
+        message = message_in,
+        team_id = current_user.user_team,
+        user_id = current_user.user_id,
+        triggered_by = None,
+        message_type = Message_Type.user_message
+        )
+
     db_message = models.TeamChat(
         user_id = current_user.user_id,
         team_id = current_user.user_team,
-        chat_message = message_in.chat_message
+        chat_message = encrypted_msg
     )
 
     db.add(db_message)
     db.commit()
     db.refresh(db_message)
-
     return db_message
 
-def create_system_message(db: Session, current_user: models.Users, message_type: int):
+def create_system_message(
+    db: Session, 
+    user_id: int,
+    team_id: int,
+    user_trigger:int, 
+    message_type: int
+):
     """Crea un nuevo mensaje de chat en la base de datos por parte del sistema"""
-    db_message = models.TeamChat(
-        user_id = current_user.user_id,
-        team_id = current_user.user_team,
-        chat_message = Message_Type(message_type).name,
+
+    encrypted_msg = encrypt_message(
+        message = Message_Type(message_type).name,
+        team_id = team_id,
+        user_id = user_id,
+        triggered_by= user_trigger,
         message_type = message_type
+    )
+
+    db_message = models.TeamChat(
+        user_id = user_id,
+        team_id = team_id,
+        chat_message = encrypted_msg,
+        message_type = message_type,
+        triggered_by = user_trigger
     )
     db.add(db_message)
     db.flush()

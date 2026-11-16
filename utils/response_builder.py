@@ -52,6 +52,7 @@ from schema.item_bundle_schema import ItemBundleResponse
 from schema.store_offer_schema import StoreOfferResponse
 from schema.user_training_schema import UserTrainingResponse
 from utils.user_leveling_system import get_user_level
+from utils.message_encryption_system import decrypt_message
 from config import settings
 
 def get_user_data(db: Session, db_user: models.Users):
@@ -164,12 +165,26 @@ def build_chat_message_data(db: Session, db_message: models.TeamChat):
         role = user_role
     )
 
+    decrypted_msg = decrypt_message(
+        encrypted_message = db_message.chat_message,
+        team_id = db_message.team_id,
+        user_id = db_message.user_id,
+        triggered_by = db_message.triggered_by,
+        message_type = db_message.message_type
+    )
+
+    user_trigger = None
+    if db_message.triggered_by is not None:
+        db_user_trigger = user_crud.get_user_by_id(db, db_message.triggered_by)
+        user_trigger = db_user_trigger.user_name
+
     return MessageResponse(
         message_id = db_message.message_id,
-        chat_message = db_message.chat_message,
+        chat_message = decrypted_msg,
         message_date = db_message.message_date,
         message_type = Message_Type(db_message.message_type).name,
-        user = user_data
+        user = user_data,
+        user_trigger = user_trigger
     )
 
 def build_boost_response(db_boost: models.Boost):
