@@ -118,7 +118,7 @@ def delete_team(db: Session, current_user: models.Users):
             detail="No se puede eliminar un equipo que aún tiene miembros."
         )
     
-    user_crud.remove_user_from_team(db, current_user, is_kick=False)
+    user_crud.remove_user_from_team(db, current_user)
     db.flush()
     db.delete(db_team)
     db.commit()
@@ -128,7 +128,7 @@ def remove_all_team_users(db: Session, team_id: int):
     team_users = user_crud.get_all_team_users(db, team_id)
     for user in team_users:
         create_user_notification(db, team_id, Notification_Type.team_kick, user.user_id)
-        user_crud.remove_user_from_team(db, user, is_kick=True)
+        user_crud.remove_user_from_team(db, user)
     return team_users
 
 def admin_delete(db: Session, team_id: int):

@@ -186,7 +186,7 @@ def kick_from_team(
     create_user_notification(db, current_user.user_team, Notification_Type.team_kick, user_id)
     
     create_system_message(db, user_id, current_user.user_team, current_user.user_id, Message_Type.team_kick)
-    user_crud.remove_user_from_team(db, user_db, is_kick=True)
+    user_crud.remove_user_from_team(db, user_db)
     db_team = team_crud.get_team_by_id(db, current_user.user_team)
 
     return build_team_data(db, db_team, details= True)
