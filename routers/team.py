@@ -137,7 +137,7 @@ def join_team(
     Crea un mensaje de chat para informar la incorporación del usuario
     """
     try:
-        check_team_user_limit(team_id)
+        check_team_user_limit(db, team_id)
         db_team = team_crud.get_team_by_id(db, team_id)
         if db_team.is_public:
             create_system_message(db, current_user.user_id, team_id, None, Message_Type.team_join)
